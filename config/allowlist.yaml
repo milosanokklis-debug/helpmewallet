@@ -1,0 +1,7 @@
+# Hosts authagent may touch. Anything else is refused. "*.x" matches subdomains of x only.
+defaults:
+  - localhost
+  - 127.0.0.1
+  - "*.test"
+# USER-ADDED HOSTS: add only sites you own or are authorized to test.
+user_hosts: []
