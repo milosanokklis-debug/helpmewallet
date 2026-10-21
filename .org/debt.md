@@ -9,3 +9,4 @@ Collected from `shortcut:` comments (/ponytail-debt).
 
 ## Cross-cutting (from DEV-001 review) — MUST honor in browser tickets
 - check_url() is a convention, not an enforced boundary. DEV-002/003/004 MUST route ALL navigation + every redirect/subresource through check_url (e.g. Playwright context.route handler), and call load_env_seed() to get creds.
+- UI-002: /verify still shows the OTP form after a successful verification (success status + data-verified=true already shown). Tighten later; not blocking.

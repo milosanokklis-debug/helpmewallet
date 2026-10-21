@@ -5,3 +5,5 @@ time,ticket,agent,model,tokens_in,tokens_out,round,note
 2026-10-21T17:58:07,DEV-001,ponytail-reviewer-senior,sonnet,69000,1000,2,re-review -> approve (needs human signoff)
 2026-10-21T17:58:08,DEV-007,dev-lead,sonnet,41000,1000,1,email-auth test site server (port 8890)
 2026-10-21T17:59:23,DEV-007,ponytail-reviewer,sonnet,27000,1000,1,approve test site server
+2026-10-21T18:00:58,UI-002,ui-lead,sonnet,35000,1000,1,test site view templates
+2026-10-21T18:02:52,UI-002,ponytail-reviewer,sonnet,29000,1000,1,approve test site pages

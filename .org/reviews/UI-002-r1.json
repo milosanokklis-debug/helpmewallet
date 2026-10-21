@@ -1,0 +1,9 @@
+{"ticket":"UI-002","round":1,"reviewer":"ponytail-reviewer","verdict":"approve","stage1":"pass",
+"findings":[
+{"file":"testsite-email/views/verify.html","severity":"minor","source":"acceptance","issue":"After successful verification the OTP form is still shown alongside the success status. Harmless for a test fixture; data-verified=\"true\" gives the agent a clear signal.","fix_hint":"Follow-up only: could hide the form when verified, but keeping it is arguably useful for testing agent behaviour."},
+{"file":"testsite-email/views/join.html","line":10,"severity":"minor","source":"acceptance","issue":"Client-side required/minlength/pattern attrs mean a real browser blocks some invalid submissions before the server error path; server alerts only reachable via non-browser or novalidate. Not a defect.","fix_hint":"None needed."},
+{"file":"testsite-email/views/profile.html","severity":"minor","source":"ponytail-review","issue":"Profile page not rendered (needs session); template verified by reading: has {{email}}, role=status, signout form."}
+],
+"criteria_met":["Server-rendered pages for /join, /verify, /signin and profile exist (200 verified for first three; profile redirects to /signin without session)","Real <label for>, input type and autocomplete attrs (email, new-password, username, current-password, one-time-code); role=alert regions","Pages wire to Express endpoints; error alerts verified live (join short password, verify bad code, signin bad credentials); success role=status with data-verified; all {{key}} placeholders preserved; server.js unmodified; inline CSS only, no external assets"],
+"criteria_missed":[],
+"notes":"Ponytail-review skill not run separately; manual review of small static templates plus live boot of testsite-email on 8890. Verify handles the emailed-link landing (server renders the same template with message/verified). Server process stopped after check."}

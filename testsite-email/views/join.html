@@ -1,7 +1,15 @@
-<!doctype html><html><head><title>Join</title></head><body>
-<!-- PLACEHOLDER: UI-002 replaces this file. Keep {{error}} {{email}} placeholders. -->
-<h1>Join</h1><p role="alert">{{error}}</p>
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Create your account</title><style>body{font:16px/1.5 system-ui,sans-serif;background:#f4f5f7;color:#1b1f24;margin:0;padding:2rem 1rem}main{max-width:26rem;margin:0 auto;background:#fff;border:1px solid #d5d9de;border-radius:8px;padding:1.5rem 1.75rem}h1{font-size:1.4rem;margin:0 0 1rem}label{display:block;font-weight:600;margin:1rem 0 .25rem}input{width:100%;box-sizing:border-box;font:inherit;padding:.55rem .6rem;border:1px solid #6b7280;border-radius:4px}input:focus,button:focus{outline:3px solid #2563eb;outline-offset:1px}button{margin-top:1.25rem;width:100%;font:inherit;font-weight:600;padding:.6rem;background:#1d4ed8;color:#fff;border:0;border-radius:4px;cursor:pointer}button:hover{background:#1e40af}.alert,.status{padding:.6rem .8rem;border-radius:4px;margin:0 0 1rem}.alert{background:#fde8e8;color:#8a1111;border:1px solid #c81e1e}.status{background:#e3f6e8;color:#0d5c24;border:1px solid #1f8a3b}.alert:empty,.status:empty{display:none}.hint{font-size:.875rem;color:#4b5563}nav{margin-top:1.25rem;font-size:.9rem}a{color:#1d4ed8}</style></head>
+<body><main>
+<h1>Create your account</h1>
+<p class="alert" role="alert">{{error}}</p>
 <form method="post" action="/join">
-<label for="email">Email</label><input id="email" name="email" type="email" autocomplete="email" value="{{email}}" required>
-<label for="password">Password</label><input id="password" name="password" type="password" autocomplete="new-password" minlength="8" required>
-<button type="submit">Create account</button></form></body></html>
+<label for="email">Email address</label>
+<input id="email" name="email" type="email" autocomplete="email" value="{{email}}" required>
+<label for="password">Password</label>
+<input id="password" name="password" type="password" autocomplete="new-password" minlength="8" required aria-describedby="pw-hint">
+<span id="pw-hint" class="hint">At least 8 characters.</span>
+<button type="submit">Create account</button>
+</form>
+<nav>Already have an account? <a href="/signin">Sign in</a></nav>
+</main></body></html>
