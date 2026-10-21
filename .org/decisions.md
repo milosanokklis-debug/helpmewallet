@@ -17,3 +17,6 @@ Incremental: scaffold+safety -> discovery -> signup/form-fill -> login+success+l
 
 ## 2026-10-21 UPDATE: Docker now UP
 Coordinator confirmed Docker Desktop is running (`docker ps`, `docker compose version` work). The email-verification e2e must now ACTUALLY RUN, not skip: bring up Mailpit, start the email-auth test site, and run the full discovery->join/verify->signin->success flow extracting the link/OTP from Mailpit's REST API. The skip-cleanly fallback stays for when Docker is genuinely down, but must not trigger in this build. (DEV-005, DEV-008 ACs updated.)
+
+## 2026-10-21 Coordinator: /helpmewallet skill + CLI contract
+Coordinator authored a project skill at .claude/skills/helpmewallet/SKILL.md (invoked `/helpmewallet <localsite>`) wrapping the pipeline with AI-in-the-loop fallbacks. DO NOT overwrite that file. The CLI contract must stay exactly `python -m authagent run --url <site>` (DEV-006), and the README must mention /helpmewallet with an example (DEV-008).

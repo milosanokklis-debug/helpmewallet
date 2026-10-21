@@ -1,0 +1,85 @@
+{
+  "ticket": "DEV-001",
+  "round": 1,
+  "reviewer": "ponytail-reviewer",
+  "verdict": "revise",
+  "stage1": "pass",
+  "findings": [
+    {
+      "file": "authagent/allowlist.py",
+      "line": 32,
+      "severity": "blocker",
+      "source": "security",
+      "issue": "Allowlist bypass via parser differential. urlsplit does not treat backslash as a delimiter but browsers (Chromium/WHATWG) do for http(s). Verified: check_url('http://evil.com\\@localhost/') returns 'localhost'; check_url('http://evil.com\\.test/') returns host 'evil.com\\.test' (matches *.test); check_url('http://evil.com\\@a.test/') returns 'a.test'. Playwright would navigate to evil.com. This defeats the sole safety chokepoint. Related laxness: the host is never validated as a hostname (accepts empty labels like '..test' and 'a..test', invalid ports like ':abc', userinfo, and control chars such as 'local\\nhost' which urlsplit silently strips).",
+      "fix_hint": "Refuse if the raw URL contains a backslash, whitespace, any control char (ord<=0x20 or 0x7f) or non-ASCII; refuse if parts.username/password is not None; touch parts.port inside try (ValueError -> refuse); then require the host to fullmatch a strict regex: labels of [a-z0-9]([a-z0-9-]{0,61}[a-z0-9])? joined by single dots (IPv4 literals pass this too). Add a regression test for each bypass above."
+    },
+    {
+      "file": "authagent/secrets.py",
+      "line": 10,
+      "severity": "major",
+      "source": "security",
+      "issue": "redact() does not actually guarantee creds never reach output. Verified unredacted: 'TEST_PASSWORD=abc123' (the exact format of .env.test, because \\b does not fire after '_'), '{\"password\": \"hunter2\"}' (closing quote sits before ':'), 'access_token=zzz', 'auth_token: zzz', 'csrf_token=zzz', 'sessionid=zzz', 'pwd=abc', Playwright cookie JSON {name, value}, bare JWTs. Separately, _known is an in-process set filled only by write_env_seed()/register_secret(): a later run that reads .env.test (the normal flow, since creds are generated once) never registers them, so value-based masking is empty and only the weak regex protects stdout/reports. test_redaction passes only because it uses 'password=' and registers explicitly.",
+      "fix_hint": "(1) Drop the leading \\b and allow word chars around the keyword (e.g. [\\w-]*(?:password|passwd|pwd|token|secret|api[_-]?key|authorization|cookie|session(?:id)?)[\\w-]*) and an optional quote before the separator so JSON keys match. (2) Add load_env_seed() (or lazy-load in redact) that reads .env.test and registers every value; make it the only way callers obtain creds. (3) Tests for TEST_PASSWORD=..., the JSON form, access_token=, and a fresh-process case (clear _known, load from file, assert masked)."
+    },
+    {
+      "file": "authagent/allowlist.py",
+      "line": 14,
+      "severity": "minor",
+      "source": "security",
+      "issue": "Allowlist config is not shape-validated, so 'fail closed' does not hold for malformed-but-parseable config. Verified: 'defaults: localhost' (scalar) yields ['l','o','c','a','l','h','o','s','t'] and check_url('http://l') is then allowed. A user_hosts entry like '*.com' silently allows a whole TLD. check_url(url, allowlist='localhost') (string) has the same char-iteration problem, and the explicit allowlist arg bypasses the config file and is only lowercased (no strip / trailing-dot normalization).",
+      "fix_hint": "In load_allowlist require defaults/user_hosts to be lists of str (else HostRefused); validate each entry against the hostname regex; reject wildcards that are not '*.' plus a multi-label suffix or 'test'. In check_url reject a non-list allowlist and reuse one normalizer for both paths."
+    },
+    {
+      "file": "authagent/allowlist.py",
+      "line": 37,
+      "severity": "minor",
+      "source": "security",
+      "issue": "Refusal messages echo the raw URL via {url!r} (unparseable and non-http branches). URLs can carry userinfo or ?token= values, and these messages reach stderr via SystemExit in __main__ and any exception log, bypassing redact(). Verified: ftp://user:SECRETpw@localhost puts SECRETpw in the message.",
+      "fix_hint": "Run messages through secrets.redact() or report only scheme+host, never userinfo/query. Add a test that the error text does not contain the password."
+    },
+    {
+      "file": "authagent/secrets.py",
+      "line": 42,
+      "severity": "minor",
+      "source": "security",
+      "issue": "write_env_seed silently overwrites any existing .env.test (data loss if the user put real authorized-test creds there), writes with default umask perms (0644 on POSIX), is non-atomic, and does not verify the target is actually gitignored (the tool could run in a repo lacking the rule, so 'only to gitignored' is assumed, not enforced). Values containing newlines would inject extra env lines.",
+      "fix_hint": "Refuse (or require overwrite=True) when the file exists; create with os.open(..., O_CREAT|O_EXCL|O_WRONLY, 0o600); run 'git check-ignore -q <path>' and refuse if not ignored; reject CR/LF in keys and values."
+    },
+    {
+      "file": "tests/test_safety.py",
+      "line": 12,
+      "severity": "minor",
+      "source": "acceptance",
+      "issue": "Tests are real, not tautological, and pytest is green (17 passed, run by reviewer). Gaps: no 'evil.test.example.com' / 'a.test.evil.com' case (behaviour is correct, verified, but unpinned); no backslash/userinfo/control-char/empty-label cases (would have caught the blocker); the fail-closed test calls load_allowlist directly, not check_url(), and cannot go through check_url because DEFAULT_PATH is bound as a default argument at def time so monkeypatch has no effect; the allowed test asserts only truthiness, not the normalized host; test_redaction relies on process-global _known with no isolation.",
+      "fix_hint": "Add the missing refused cases; let check_url accept a config path or read DEFAULT_PATH at call time and test fail-closed through check_url; assert check_url('http://LOCALHOST') == 'localhost'; add a fixture that clears sec._known."
+    },
+    {
+      "file": ".gitignore",
+      "line": 1,
+      "severity": "minor",
+      "source": "acceptance",
+      "issue": "Verified with git check-ignore: .env.test, node_modules/, ms-playwright/, __pycache__/, *.pyc, reports/ are ignored; .env.test.example is correctly NOT ignored. Gaps for what later tickets will produce: no .env.* variants, no Playwright storage-state/auth files (hold session cookies), no .venv/venv, *.log, *.egg-info. Ordering: commit 263bb65 (.org blackboard, no code or secrets) precedes the .gitignore commit 44a53e7; benign, but 'committed first' is not literally true.",
+      "fix_hint": "Add '.env.*' with '!.env.test.example', 'storage_state*.json', '*.log', '.venv/', 'venv/', '*.egg-info/'."
+    },
+    {
+      "file": "authagent/allowlist.py",
+      "severity": "minor",
+      "source": "security",
+      "issue": "Design note for later tickets: check_url is a convention, not an enforced boundary. Nothing stops a later module calling page.goto or requests directly, and it validates only the initial URL. Redirects, subresource/XHR requests, and DNS for *.test (resolved by local hosts/DNS, not guaranteed loopback) are outside its reach.",
+      "fix_hint": "In the browser ticket: wrap navigation in one function that calls check_url, install a Playwright context.route('**/*') handler that re-runs check_url on every request including redirects and aborts non-allowlisted ones; use allow_redirects=False (or re-check each hop) for requests; add a test/grep that fails if page.goto or requests.* is used outside the wrapper."
+    }
+  ],
+  "criteria_met": [
+    ".gitignore committed before any code and ignores node_modules/, Playwright browsers, .env.test, __pycache__, *.pyc, report output dirs (verified with git check-ignore)",
+    "authagent package with working entry stub (python -m authagent --help verified); requirements.txt pins playwright, pyyaml, requests, pytest; README notes playwright install chromium",
+    "config/allowlist.yaml has defaults localhost, 127.0.0.1, *.test and user_hosts",
+    ".env.test.example committed",
+    "pytest green (17 passed, run by reviewer, Python 3.12.5)"
+  ],
+  "criteria_missed": [
+    "Single allowlist chokepoint that REFUSES any non-allowlisted host: bypassable with backslash URLs (evil.com\\@localhost, evil.com\\.test) - blocker",
+    "Redaction utility guarantees creds never reach logs/stdout/reports: misses TEST_PASSWORD=..., JSON-quoted keys, *_token keys, and does not register secrets in a fresh process - major"
+  ],
+  "needs_human_signoff": true,
+  "notes": "Ran security-and-hardening (SSRF/allowlist, secrets, input validation) and doubt-driven review of the two key decisions: (1) trusting urllib.urlsplit as the arbiter of which host a browser will contact - found a concrete bypass; (2) in-memory secret registry plus regex redaction - found it empty in a fresh process and blind to the .env.test format itself. Confirmed correct: *.test matches subdomains only (evil.test.example.com, nottest, eviltest, bare 'test', '.test' refused); trailing-dot localhost./127.0.0.1. normalized; fullwidth-unicode and alternate IP forms (127.1, 0x7f.1, [::1]) refused; empty/missing/non-mapping/invalid YAML raises HostRefused; non-http(s) schemes and empty host refused; generated email domain is authagent.test. ctx.py diff returned only noise (no content), so the committed files were read directly. Stage1 (pytest, secret-scan) passes. Human sign-off required (risk:high)."
+}

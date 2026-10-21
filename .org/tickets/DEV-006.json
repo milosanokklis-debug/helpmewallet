@@ -12,7 +12,8 @@
     "CLI: python -m authagent run --url http://localhost:8889 runs allowlist-check -> discovery -> signup -> login -> success -> logout -> re-login (and email step when present)",
     "Per-run JSON report written to a run dir: step timeline with timestamps, discovered routes, screenshots paths, pass/fail per step, clear failure reasons",
     "Secrets (generated creds, cookies) NEVER appear in the JSON report or stdout; redaction unit-tested against the real report object",
-    "Exit code nonzero on failure/refusal; allowlist refusal surfaces as a clear message and nonzero exit"
+    "Exit code nonzero on failure/refusal; allowlist refusal surfaces as a clear message and nonzero exit",
+    "CLI contract MUST remain exactly: python -m authagent run --url <site> (a coordinator skill /helpmewallet depends on it). Do not rename or restructure this subcommand/flag."
   ],
   "assigned_model": "haiku",
   "design_skill": null,
