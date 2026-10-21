@@ -2,3 +2,5 @@ time,ticket,agent,model,tokens_in,tokens_out,round,note
 2026-10-21T17:52:21,DEV-001,dev-lead,sonnet,34000,1000,1,scaffold+safety build
 2026-10-21T17:52:21,DEV-001,ponytail-reviewer-senior,sonnet,56000,1000,1,senior review -> revise
 2026-10-21T17:55:03,DEV-001,dev-lead,sonnet,25000,1000,2,"revision: allowlist+redaction hardened, 41 tests"
+2026-10-21T17:58:07,DEV-001,ponytail-reviewer-senior,sonnet,69000,1000,2,re-review -> approve (needs human signoff)
+2026-10-21T17:58:08,DEV-007,dev-lead,sonnet,41000,1000,1,email-auth test site server (port 8890)

@@ -1,0 +1,47 @@
+{
+  "ticket": "DEV-001",
+  "round": 2,
+  "reviewer": "ponytail-reviewer",
+  "verdict": "approve",
+  "stage1": "pass",
+  "findings": [
+    {
+      "file": "authagent/secrets.py",
+      "line": 13,
+      "severity": "minor",
+      "source": "security",
+      "issue": "Residual redaction gap, not a regression: the unquoted-value branch stops at ',', ';' and '}'. Verified: 'Cookie: sid=abc; x=y' -> 'Cookie: [REDACTED]; x=y' (second cookie value leaks if not registered) and 'password=ab;cd' would leave 'cd'. Generated creds are token_urlsafe so they are safe and registered via load_env_seed; this only affects unregistered third-party cookies/passwords later tickets may log.",
+      "fix_hint": "For keywords cookie/set-cookie/authorization swallow to end of line (use [^\\r\\n]* for those keys), keep the stop-set only for JSON-style keys. Add a test with a two-cookie header."
+    },
+    {
+      "file": "authagent/allowlist.py",
+      "line": 27,
+      "severity": "minor",
+      "source": "security",
+      "issue": "Wildcard breadth check only rejects single-label suffixes. A user-added '*.co.uk' (public suffix) is accepted. Acceptable because user_hosts is a deliberate owner action, but worth a comment in config/allowlist.yaml.",
+      "fix_hint": "Optional: document in allowlist.yaml that wildcards should be your own domain, or require >=2 labels plus not in a small public-suffix list."
+    },
+    {
+      "file": "authagent/secrets.py",
+      "line": 60,
+      "severity": "minor",
+      "source": "security",
+      "issue": "0o600 is requested but Windows ignores POSIX modes (file came out 0o666 here); the 'shortcut:' that gitignore is not verified at write time is documented. Both acceptable for a local single-user Windows dev tool; ACLs not in scope.",
+      "fix_hint": "None required. Optionally note the Windows limitation in README."
+    }
+  ],
+  "criteria_met": [
+    ".gitignore committed first (before code) and ignores node_modules/, Playwright browsers, .env.test, __pycache__, *.pyc, report dirs; now also .env.* (with !.env.test.example), storage_state*.json, auth.json, .venv/venv, *.log, logs/ (verified with git check-ignore; .env.test.example still tracked)",
+    "authagent package with working entry (python -m authagent --help); requirements pinned; README notes playwright install chromium",
+    "config/allowlist.yaml has localhost, 127.0.0.1, *.test and user_hosts",
+    "Single allowlist chokepoint fails closed: round-1 bypasses http://evil.com\\@localhost/, http://evil.com\\.test/, http://evil.com\\@a.test/ now refused up front (backslash/whitespace/control/non-ASCII rejected); evil.test.example.com, nottest, bare test, ..test, a..test, bad ports, userinfo, %-encoded hosts, bracketed IPv6, non-http schemes all refused; localhost, 127.0.0.1, A.TEST normalize and pass",
+    "Config shape validation: string defaults, *.com, *, *., non-string and non-list entries, URL-shaped entries, empty entries all raise HostRefused; string allowlist arg rejected",
+    "Refusal messages no longer echo raw URLs (ftp://u:SECRETpw@localhost message contains no password, including via the CLI)",
+    "Redaction now masks TEST_PASSWORD=, JSON and single-quoted keys, access_token/auth_token/csrf_token, sessionid, pwd, Authorization, Cookie/Set-Cookie (first pair), query tokens, and JWTs; load_env_seed() registers values so a fresh process masks the password (verified by clearing _known, loading, redacting)",
+    "write_env_seed refuses existing file (FileExistsError) unless overwrite=True, rejects multi-line values, still refuses non-.env.test filenames",
+    "Unit tests: 41 passed (run by reviewer); new tests pin each bypass, config validation, fresh-process load, and overwrite refusal"
+  ],
+  "criteria_missed": [],
+  "needs_human_signoff": true,
+  "notes": "Round 2, scoped to confirming round-1 fixes; all blocker/major items are genuinely fixed and verified by re-running probes, not just by trusting tests. Remaining items are minor and non-blocking. The design caveat from round 1 stands for later tickets: check_url is a convention, so the browser ticket must wrap navigation and route-intercept every request/redirect through it. Human sign-off required (risk:high)."
+}
