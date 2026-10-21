@@ -6,7 +6,15 @@ p.add_argument("--crawl", metavar="URL", help="crawl a site (allowlist-gated) an
 p.add_argument("--depth", type=int, default=2)
 p.add_argument("--max-pages", type=int, default=25)
 p.add_argument("--signup", metavar="URL", help="discover and fill the signup form; creds go to .env.test only")
+p.add_argument("--e2e", metavar="URL", help="discover, signup, login, logout, re-login (allowlist-gated)")
 a = p.parse_args()
+if a.e2e:
+    from .allowlist import HostRefused
+    from .auth import e2e, report
+    try:
+        raise SystemExit(0 if report(e2e(a.e2e)) else 1)
+    except HostRefused as e:
+        raise SystemExit(str(e))
 if a.signup:
     import json
     from .allowlist import HostRefused

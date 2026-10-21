@@ -56,6 +56,20 @@ SUBMIT_WORDS = re.compile(r"sign[\s-]?up|register|create|join|continue|next|subm
 SUCCESS_TEXT = re.compile(r"check your (e-?mail|inbox)|verif|confirmation|welcome|success|account (has been )?created", re.I)
 
 
+CAPTCHA_JS = """() => {
+  const sel = '.g-recaptcha,.h-captcha,.cf-turnstile,[data-sitekey],#recaptcha,[class*=captcha i],[id*=captcha i],' +
+    'iframe[src*=recaptcha],iframe[src*=hcaptcha],iframe[src*=turnstile],iframe[src*=captcha i],iframe[src*=arkoselabs],iframe[src*=funcaptcha]';
+  const el = document.querySelector(sel);
+  if (el) return (typeof el.className === 'string' && el.className ? el.className : el.tagName).slice(0, 40);
+  return /i.?m not a robot|verify (that )?you are (a )?human|are you a human/i.test(document.body.innerText) ? 'human-check text' : null;
+}"""
+
+
+def detect_captcha(page):
+    """DOM-only detection (never interacts with or reads the widget). Returns a short label or None."""
+    return page.evaluate(CAPTCHA_JS)
+
+
 def _blob(f):
     return " ".join(str(f.get(k) or "") for k in ("name", "id", "aria_label", "label", "placeholder"))
 
@@ -218,6 +232,9 @@ def fill_step(page, d, creds, adj):
 
 def run_signup(page, creds, max_steps=4, max_retries=3, persist=None):
     """Drive the signup form on the already-loaded page. Returns an outcome dict (no secrets)."""
+    cap = detect_captcha(page)
+    if cap:
+        return _result("captcha_detected", 0, 0, [], [f"CAPTCHA/bot check detected ({cap}); stopped"], page, [])
     posts = []
     page.on("response", lambda r: posts.append(r.status) if r.request.method == "POST" else None)
     adj, steps, attempts, trail = {}, 0, 0, []
@@ -257,7 +274,8 @@ def run_signup(page, creds, max_steps=4, max_retries=3, persist=None):
                 return _result("server_error", steps, attempts, trail, page.evaluate(FIELDS_JS)["errors"], page, posts)
         after = page.evaluate(FIELDS_JS)
         if _signature(after) != sig:  # form changed: success page or next step
-            if not any(f["type"] == "password" for f in after["fields"]) and (SUCCESS_TEXT.search(after["text"]) or not after["fields"]):
+            ok_post = len(posts) > n and posts[-1] < 400
+            if not any(f["type"] == "password" for f in after["fields"]) and (ok_post or SUCCESS_TEXT.search(after["text"]) or not after["fields"]):
                 return _result("submitted", steps, attempts, trail, [], page, posts)
             continue
         if not after["errors"] and len(posts) > n:
@@ -271,14 +289,14 @@ def _result(outcome, steps, attempts, trail, errors, page, posts):
             "errors": [sec.redact(e)[:120] for e in errors]}
 
 
-def signup(url, headless=True):
+def signup(url, headless=True, sitemap=None):
     """Discover a signup page from url (crawl), fill and submit it. Creds persist only via .env.test."""
     from playwright.sync_api import sync_playwright
 
     from .crawl import crawl, guard_context
 
     check_url(url)
-    sm = crawl(url, depth=2, max_pages=15, headless=headless)
+    sm = sitemap or crawl(url, depth=2, max_pages=15, headless=headless)
     target = next((u for u, p in sm["pages"].items() for f in p.get("forms", [])
                    if f["classification"]["kind"] == "signup"), None)
     if not target:
