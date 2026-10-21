@@ -220,7 +220,9 @@ def _e2e(url, headless, steps):
     login_url = next((u for u, p in sm["pages"].items() for f in p.get("forms", []) if f["classification"]["kind"] == "login"), None)
     if not step("discovery", login_url and "signup" in forms.values(), forms=forms, pages=len(sm["pages"])):
         return
-    if sec.ENV_PATH.exists():  # re-runnable: reuse the stored account instead of failing with 409 on re-signup
+    skipped_signup = sec.ENV_PATH.exists()
+    res = {}
+    if skipped_signup:  # re-runnable: reuse the stored account instead of failing with 409 on re-signup
         step("signup", True, skipped="existing .env.test creds reused (delete it to sign up a fresh account)")
     else:
         res = signup(url, headless=headless, sitemap=sm)
@@ -228,6 +230,8 @@ def _e2e(url, headless, steps):
                     post_statuses=res.get("post_statuses"), errors=res.get("errors")):
             return
     creds = sec.load_env_seed()  # registers values so redact() masks them
+    if not skipped_signup and not _email_step(url, res, creds, headless, step):
+        return
     with sync_playwright() as pw:
         b = pw.chromium.launch(headless=headless)
         try:
@@ -244,6 +248,30 @@ def _e2e(url, headless, steps):
                     step("re_login", r2["ok"], **{k: v for k, v in r2.items() if k != "ok"})
         finally:
             b.close()
+
+
+def _email_step(url, signup_res, creds, headless, step):
+    """If the post-signup page asks to check email / enter a code, complete it via the mail provider."""
+    from playwright.sync_api import sync_playwright
+
+    from .crawl import guard_context
+    from .mail import MailpitProvider, complete_verification
+
+    base = "{0.scheme}://{0.netloc}".format(urlsplit(url))
+    with sync_playwright() as pw:
+        b = pw.chromium.launch(headless=headless)
+        try:
+            ctx = b.new_context()
+            guard_context(ctx, url, {"blocked": 0})
+            page = ctx.new_page()
+            page.goto(base + (signup_res.get("final_path") or "/"), wait_until="domcontentloaded", timeout=15000)
+            _settle(page)
+            r = complete_verification(page, MailpitProvider(), creds)
+        finally:
+            b.close()
+    ok = r.pop("ok")
+    step("email_verify", ok or r.get("required") is False, **r)
+    return ok or r.get("required") is False
 
 
 def report(steps):

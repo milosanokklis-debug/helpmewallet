@@ -1,0 +1,8 @@
+# Mailpit: local mail sink for email-verification tests (SMTP 1025, web UI + REST API 8025). Accepts any recipient.
+services:
+  mailpit:
+    image: axllent/mailpit
+    ports:
+      - "127.0.0.1:1025:1025"
+      - "127.0.0.1:8025:8025"
+    restart: unless-stopped
