@@ -98,3 +98,51 @@ def test_validation_failure_is_reported_and_redacted(page):
     page.set_content("""<form onsubmit="return false"><input type=password name=p><p role=alert>Wrong thing</p><button>Sign up</button></form>""")
     res = _sign(page, new_creds())
     assert res["outcome"] == "validation_failed"
+
+
+from authagent.fill import make_password, sanitize_username
+
+
+def _classes(pw):
+    return all(re.search(p, pw) for p in (r"[A-Z]", r"[a-z]", r"\d"))
+
+
+def test_password_tiny_maxlength_keeps_classes_and_min():
+    base = "abcdefghijklmnop-_qrstu"
+    pw = make_password(base, 0, 6)
+    assert len(pw) == 6 and _classes(pw)  # impossible hi<8 is honoured, classes still present
+    pw = make_password(base, 0, 10)
+    assert 8 <= len(pw) <= 10 and _classes(pw)
+
+
+def test_password_128_cap_on_retry():
+    assert len(make_password("abcXYZ123-", 200, 0)) == 128
+
+
+def test_no_symbol_retry_is_alphanumeric():
+    pw = make_password("ab-cd_EF-9xyzxyzxyzxyz", 0, 0, no_symbol=True)
+    assert pw.isalnum() and _classes(pw)
+    c = new_creds()
+    c["TEST_PASSWORD"] = "ab-cd_EF-9xyzxyzxyzxyz"
+    assert gen_value("password", {"type": "password"}, c, {"no_symbol": True}).isalnum()
+
+
+def test_symbol_added_by_default():
+    assert re.search(r"[^A-Za-z0-9]", make_password("abcDEF12345678"))
+
+
+def test_loaded_username_sanitized():
+    assert sanitize_username("Ab-C") == re.sub(r"[^a-z0-9_]", "", sanitize_username("Ab-C")) and len(sanitize_username("Ab-C")) >= 3
+    assert re.fullmatch(r"[a-z0-9_]{3,24}", sanitize_username("A" * 40 + "-!"))
+    assert re.fullmatch(r"[a-z0-9_]{3,24}", sanitize_username("---"))
+    c = new_creds()
+    c["TEST_USERNAME"] = "Ab-C"
+    assert re.fullmatch(r"[a-z0-9_]{3,24}", gen_value("username", {"type": "text"}, c))
+
+
+def test_error_regexes_use_word_boundaries():
+    adj = {}
+    assert not adjust_from_errors(["Password already used before"], adj) or "regen" not in adj
+    adj = {}
+    adjust_from_errors(["Username is already taken"], adj)
+    assert adj.get("regen") == 1

@@ -122,27 +122,43 @@ def length_limits(f, adj=None, role=""):
     return lo, hi
 
 
+def make_password(base, lo=0, hi=0, no_symbol=False):
+    """Password within [max(lo,8), min(hi,128)] that still has upper, lower, digit (and a symbol unless no_symbol)."""
+    hi = min(hi or 128, 128)
+    lo = min(max(lo, 8), hi)
+    if no_symbol:
+        base = re.sub(r"[^A-Za-z0-9]", "", base)
+    base = base or "x"
+    while len(base) < lo:
+        base += base  # deterministic padding keeps the stored seed authoritative
+    pw = list(base[:hi])
+    need = [c for c, ok in (("A", re.search(r"[A-Z]", base[:hi])), ("a", re.search(r"[a-z]", base[:hi])),
+                            ("1", re.search(r"\d", base[:hi])),
+                            ("!", no_symbol or re.search(r"[^A-Za-z0-9]", base[:hi]))) if not ok]
+    for i, c in enumerate(need[: len(pw)]):  # overwrite trailing chars so length limits still hold
+        pw[-1 - i] = c
+    return "".join(pw)
+
+
+def sanitize_username(u, lo=3, hi=24):
+    """Force a username into [a-z0-9_] and the length limits (hi defaults to 24 when unknown)."""
+    u = re.sub(r"[^a-z0-9_]", "", str(u).lower()) or "agent"
+    while len(u) < max(lo, 3):
+        u += _s.token_hex(2)
+    return u[: hi or 24]
+
+
 def gen_value(role, f, creds, adj=None):
     """Valid test value for a role respecting visible constraints. Returns None to leave the field alone."""
     adj = adj or {}
     lo, hi = length_limits(f, adj, role)
     if role in ("password", "confirm_password"):
         lo, hi = length_limits(f, adj, "password")
-        pw = creds["TEST_PASSWORD"]
-        if not adj.get("no_symbol") and not any(c in pw for c in "!-_"):
-            pw += "!"
-        if not (re.search(r"[A-Z]", pw) and re.search(r"[a-z]", pw) and re.search(r"\d", pw)):
-            pw += "Aa1"
-        while len(pw) < max(lo, 8):
-            pw += pw  # deterministic padding keeps the stored seed authoritative
-        return pw[:hi] if hi else pw
+        return make_password(creds["TEST_PASSWORD"], lo, hi, bool(adj.get("no_symbol")))
     if role == "email":
         return creds["TEST_EMAIL"]
     if role == "username":
-        u = creds["TEST_USERNAME"]
-        if lo and len(u) < lo:
-            u += _s.token_hex(lo)
-        return u[:hi] if hi else u
+        return sanitize_username(creds["TEST_USERNAME"], lo, hi)
     if role == "first_name":
         return "Test"
     if role == "last_name":
@@ -166,17 +182,17 @@ def adjust_from_errors(errors, adj):
     for e in errors:
         e = e.lower()
         scope = "password" if "password" in e else "username" if "user" in e else None
-        for m in re.finditer(r"(?:at least|minimum(?: of)?|min\.?|more than)\s*(\d+)", e):
+        for m in re.finditer(r"\b(?:at least|minimum(?: of)?|min|more than)\b\.?\s*(\d+)", e):
             for s in ([scope] if scope else ["password", "username"]):
                 adj[s + "_min"] = max(adj.get(s + "_min", 0), int(m[1])); changed = True
-        for m in re.finditer(r"(?:at most|maximum(?: of)?|max\.?|no more than|too long.*?(\d+)|fewer than)\s*(\d+)?", e):
+        for m in re.finditer(r"\b(?:at most|maximum(?: of)?|max|no more than|too long.*?(\d+)|fewer than)\b\.?\s*(\d+)?", e):
             n = m[2] or m[1]
             if n:
                 for s in ([scope] if scope else ["username"]):
                     adj[s + "_max"] = int(n); changed = True
         if re.search(r"only letters and numbers|alphanumeric|special characters? (are )?not allowed|no special", e):
             adj["no_symbol"] = True; changed = True
-        if re.search(r"taken|already|exists|in use|registered", e):
+        if scope != "password" and re.search(r"\b(taken|already (taken|exists|registered|in use)|exists|in use)\b", e):
             adj["regen"] = adj.get("regen", 0) + 1; changed = True
     return changed
 
@@ -220,7 +236,14 @@ def fill_step(page, d, creds, adj):
             v = gen_value(role, f, creds, adj)
             if v is not None:
                 loc.select_option(v)
-        elif role in ("radio", "checkbox", "other"):
+        elif role == "radio" or (role == "checkbox" and f.get("required")):
+            if f.get("required"):
+                loc.check()
+            else:
+                continue
+        elif role == "other" and f.get("required") and f["type"] in ("text", "textarea", "search"):
+            loc.fill("test")
+        elif role in ("checkbox", "other"):
             continue
         else:
             v = gen_value(role, f, creds, adj)
@@ -303,7 +326,7 @@ def signup(url, headless=True, sitemap=None):
         return {"outcome": "no_signup_form_found", "pages": len(sm["pages"])}
     if sec.ENV_PATH.exists():
         creds = sec.load_env_seed()
-        creds.setdefault("TEST_USERNAME", "agent_" + _s.token_hex(4))
+        creds["TEST_USERNAME"] = sanitize_username(creds.get("TEST_USERNAME") or "agent_" + _s.token_hex(4))
         creds["_existing"] = True
     else:
         creds = new_creds()
