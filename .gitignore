@@ -1,0 +1,11 @@
+node_modules/
+ms-playwright/
+.playwright/
+.env.test
+.env
+__pycache__/
+*.pyc
+.pytest_cache/
+runs/
+reports/
+output/
