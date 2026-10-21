@@ -9,3 +9,8 @@ time,ticket,agent,model,tokens_in,tokens_out,round,note
 2026-10-21T18:02:52,UI-002,ponytail-reviewer,sonnet,29000,1000,1,approve test site pages
 2026-10-21T18:05:38,DEV-002,dev-lead,sonnet,50000,1500,1,"discovery crawler + classifier, 47 tests, live 8889 OK"
 2026-10-21T18:07:47,DEV-002,ponytail-reviewer,sonnet,34000,1000,1,approve discovery; safety routing verified
+2026-10-21T18:11:27,DEV-003,dev-lead,sonnet,45000,1500,1,"form filling + signup, 53 tests, live 8890 fill"
+2026-10-21T18:13:55,DEV-003,ponytail-reviewer,sonnet,39000,1000,1,revise: value generator breaks constraints
+2026-10-21T18:18:27,DEV-004,dev-lead,sonnet,55000,1800,1,"login+success+logout+relogin+CAPTCHA, full live 8889 e2e PASS, 59 tests"
+2026-10-21T18:25:57,DEV-003,dev-lead,sonnet,20000,1000,2,"revision: value generator fixed, 65 tests"
+2026-10-21T18:25:57,DEV-004,ponytail-reviewer-senior,sonnet,71000,2000,1,senior review -> revise (4 majors incl secret leak)

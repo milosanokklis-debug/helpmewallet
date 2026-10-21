@@ -23,3 +23,6 @@ Coordinator authored a project skill at .claude/skills/helpmewallet/SKILL.md (in
 
 ## 2026-10-21 Coordinator: 8889 DOWN, reorder
 localhost:8889 is DOWN (connection refused). Coordinator verified DEV-001 independently (41 tests, bypass URLs refused) and is getting user sign-off in parallel; DO NOT mark DEV-001/DEV-004 done until sign-off relayed. DEV-002 handed back done (47 tests, good live 8889 run before the server stopped) -> re-review. Build order while 8889 is down: DEV-003 -> DEV-005 (LIVE against 8890 + Mailpit) -> DEV-006 -> UI-001. Defer ONLY DEV-004's 8889 e2e until 8889 returns. DEV-003's live signup proving-ground is the 8890 /join form while 8889 is down.
+
+## 2026-10-21 Sign-off + 8889 back up
+User EXPLICITLY signed off on DEV-001 (risk:high) -> marked done. localhost:8889 confirmed back UP (200) -> DEV-004 full live e2e can run and DEV-002's crawl is to be re-confirmed within it. DEV-004 still needs its own user sign-off before done (risk:high).

@@ -10,3 +10,9 @@ Collected from `shortcut:` comments (/ponytail-debt).
 ## Cross-cutting (from DEV-001 review) — MUST honor in browser tickets
 - check_url() is a convention, not an enforced boundary. DEV-002/003/004 MUST route ALL navigation + every redirect/subresource through check_url (e.g. Playwright context.route handler), and call load_env_seed() to get creds.
 - UI-002: /verify still shows the OTP form after a successful verification (success status + data-verified=true already shown). Tighten later; not blocking.
+
+## DEV-002 (approved) deferred minors
+- Allowlist routing does not cover WebSockets or service-worker fetches. Fix: service_workers='block' + route_web_socket in guard_context.
+- Classifier test coverage thin (~6 of 47 tests are new classifier cases).
+- Cache re-validation has no age check.
+- Live 8889 crawl (/register=signup, /login=login) was waived while 8889 was down — RE-CONFIRM now that 8889 is back up (fold into DEV-004 e2e).
