@@ -1,0 +1,15 @@
+{"ticket":"DEV-002","round":1,"reviewer":"ponytail-reviewer","verdict":"approve","stage1":"pass",
+"findings":[
+{"file":"authagent/crawl.py","line":60,"severity":"minor","source":"security","issue":"guard_context uses context.route('**/*') routing every request (navigation, redirect hops, subresources) through check_url, aborting on HostRefused, plus a cross-origin navigation block. This is correct and fails closed. Gaps: Playwright route does not intercept WebSocket connections or service-worker-originated fetches, so page JS on an allowlisted host could still reach a non-allowlisted host that way.","fix_hint":"Create the context with service_workers='block' and add context.route_web_socket('**/*', ...) (or page.route_web_socket) that closes sockets failing check_url."},
+{"file":"tests/test_crawl.py","severity":"minor","source":"acceptance","issue":"Only about 6 new tests (signup/login/other/pseudo-form/URL hints/guard block). The 47 total includes DEV-001 safety tests. Classifier coverage of ARIA, autocomplete-only and login-with-register-link edge cases is thin.","fix_hint":"Follow-up: add parametrized fixtures for those cases."},
+{"file":"authagent/crawl.py","line":129,"severity":"minor","source":"acceptance","issue":"Cache re-validation only diffs page set and form kinds; no staleness/age check. Acceptable for this ticket.","fix_hint":"None required."}
+],
+"criteria_met":[
+"Same-origin chromium crawler with --depth/--max-pages; pages rendered via page.goto + DOM evaluate; http_status informational only",
+"Site map: pages, links, buttons, forms with fields (type,name,id,autocomplete,aria_label,label,placeholder) and visible text; pseudo-form for SPA pages; field values never read",
+"Classifier uses text, ARIA, input types, autocomplete, URL hints, shape (2 passwords => signup); no hardcoded routes/selectors",
+"Per-host cache in runs/ (gitignored), re-validated via save_and_diff each run; errored runs do not overwrite cache",
+"Classifier unit tests on HTML fixtures; pytest 47 passed (re-run by reviewer); stage1 pass",
+"SAFETY: seed checked with check_url, all requests routed through check_url incl. redirects/subresources, cross-origin navs aborted, blocked count reported; errors and output go through redact/safe_print; query/fragment dropped from stored URLs"],
+"criteria_missed":[],
+"notes":"Live run against localhost:8889 (criterion: /register=signup, /login=login) not reproduced because the server is down; waived per Orchestrator. Ponytail-review applied manually on crawl.py/classify.py/__main__.py (diff tool showed nothing since code is already committed in 887f4f4)."}

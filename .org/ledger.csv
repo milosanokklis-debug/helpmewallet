@@ -7,3 +7,5 @@ time,ticket,agent,model,tokens_in,tokens_out,round,note
 2026-10-21T17:59:23,DEV-007,ponytail-reviewer,sonnet,27000,1000,1,approve test site server
 2026-10-21T18:00:58,UI-002,ui-lead,sonnet,35000,1000,1,test site view templates
 2026-10-21T18:02:52,UI-002,ponytail-reviewer,sonnet,29000,1000,1,approve test site pages
+2026-10-21T18:05:38,DEV-002,dev-lead,sonnet,50000,1500,1,"discovery crawler + classifier, 47 tests, live 8889 OK"
+2026-10-21T18:07:47,DEV-002,ponytail-reviewer,sonnet,34000,1000,1,approve discovery; safety routing verified
