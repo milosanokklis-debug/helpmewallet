@@ -1,0 +1,26 @@
+{
+  "id": "DEV-005",
+  "team": "dev",
+  "parent": null,
+  "title": "Email verification: Mailpit provider + docker-compose + pluggable interface",
+  "type": "feature",
+  "complexity": "L",
+  "risk": "normal",
+  "spec_ref": ".org/artifacts/specs/DEV-005.md",
+  "inputs": [],
+  "acceptance_criteria": [
+    "docker-compose.yml runs Mailpit (SMTP + REST API) inside the project",
+    "Pluggable email-provider interface; Mailpit provider polls the REST API for the newest message to the generated (plus-addressed per run) address",
+    "Extracts verification link OR OTP code from the message; auto-detects 'check your email' / 'enter code' states and completes the step",
+    "Unit tests for email link extraction and OTP parsing on fixture messages; pytest green",
+    "The email e2e SKIPS with a clear message when Mailpit/Docker is unreachable (does NOT hang); verified now since Docker daemon is DOWN",
+    "Docker is UP now: bring up Mailpit via docker compose and perform a REAL fetch from its REST API in an integration test (not skipped). Keep skip-cleanly ONLY as fallback for when Docker is genuinely unreachable."
+  ],
+  "assigned_model": "sonnet",
+  "design_skill": null,
+  "budget": {
+    "max_tokens": 20000,
+    "max_rounds": 2
+  },
+  "status": "todo"
+}

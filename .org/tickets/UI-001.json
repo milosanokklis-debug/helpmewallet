@@ -1,0 +1,25 @@
+{
+  "id": "UI-001",
+  "team": "ui",
+  "parent": null,
+  "title": "HTML run report",
+  "type": "design",
+  "complexity": "M",
+  "risk": "normal",
+  "spec_ref": ".org/artifacts/specs/UI-001.md",
+  "inputs": [
+    ".org/artifacts/specs/DEV-006.md"
+  ],
+  "acceptance_criteria": [
+    "Renders the per-run JSON into a single self-contained HTML report: step timeline, embedded/linked screenshots, discovered routes table, clear pass/fail and failure reasons",
+    "No secrets appear anywhere in the HTML (consumes the already-redacted JSON)",
+    "Readable in light context; works opened directly from disk (no server, no external CDN required for core layout)"
+  ],
+  "assigned_model": "haiku",
+  "design_skill": "hallmark",
+  "budget": {
+    "max_tokens": 20000,
+    "max_rounds": 2
+  },
+  "status": "todo"
+}

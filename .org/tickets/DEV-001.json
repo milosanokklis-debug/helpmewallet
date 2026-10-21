@@ -1,0 +1,26 @@
+{
+  "id": "DEV-001",
+  "team": "dev",
+  "parent": null,
+  "title": "Project scaffold + safety core (allowlist, secrets, gitignore)",
+  "type": "feature",
+  "complexity": "M",
+  "risk": "high",
+  "spec_ref": ".org/artifacts/specs/DEV-001.md",
+  "inputs": [],
+  "acceptance_criteria": [
+    "git repo has .gitignore committed first; it ignores node_modules/, Playwright browsers, .env.test, __pycache__, *.pyc, report output dirs",
+    "authagent/ Python package with module entry stub (python -m authagent --help works); requirements.txt pins playwright, pyyaml, requests, pytest; README notes playwright install chromium",
+    "config/allowlist.yaml exists with defaults localhost, 127.0.0.1, *.test and a place for user-added hosts",
+    "A single allowlist chokepoint function parses a URL host and REFUSES (raises/returns refusal, never proceeds) any host not matching allowlist incl wildcard *.test; localhost and 127.0.0.1 allowed",
+    "Unit test proves refusal: allowed hosts pass, a non-allowlisted host (e.g. example.com) is refused; pytest green",
+    ".env.test.example committed; a secrets/credential helper writes generated creds only to gitignored .env.test seed and a redaction utility guarantees creds never reach logs/stdout/reports; unit test covers redaction"
+  ],
+  "assigned_model": "sonnet",
+  "design_skill": null,
+  "budget": {
+    "max_tokens": 20000,
+    "max_rounds": 2
+  },
+  "status": "in_progress"
+}

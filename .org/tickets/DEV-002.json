@@ -1,0 +1,26 @@
+{
+  "id": "DEV-002",
+  "team": "dev",
+  "parent": null,
+  "title": "Discovery crawler + form/page classification",
+  "type": "feature",
+  "complexity": "L",
+  "risk": "normal",
+  "spec_ref": ".org/artifacts/specs/DEV-002.md",
+  "inputs": [],
+  "acceptance_criteria": [
+    "Playwright chromium crawler, same-origin only, with configurable depth and max-page limits; renders each page (does not trust HTTP status)",
+    "Produces a site map: pages visited, links, buttons, forms with their fields (type, name, autocomplete, aria, labels, visible text)",
+    "Classifies each form as signup vs login vs other using visible text, ARIA roles/labels, input types & autocomplete, URL hints, and form shape (2 password fields => signup)",
+    "Site map cached per host but re-validated on each run",
+    "Unit tests for form/field classification cover signup vs login vs other on representative HTML fixtures; pytest green",
+    "Runs against http://localhost:8889 and correctly identifies /register as signup and /login as login (evidence in report/stdout, no secrets)"
+  ],
+  "assigned_model": "sonnet",
+  "design_skill": null,
+  "budget": {
+    "max_tokens": 20000,
+    "max_rounds": 2
+  },
+  "status": "todo"
+}

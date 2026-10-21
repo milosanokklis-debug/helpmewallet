@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Org task ticket",
+  "type": "object",
+  "required": ["id", "team", "title", "type", "complexity", "risk", "acceptance_criteria", "assigned_model", "status"],
+  "properties": {
+    "id": {"type": "string", "pattern": "^(DEV|UI|QA|DOC|OPS)-\\d{3}$"},
+    "team": {"enum": ["dev", "ui", "qa", "docs", "devops"]},
+    "parent": {"type": ["string", "null"]},
+    "title": {"type": "string"},
+    "type": {"enum": ["boilerplate", "feature", "design", "bugfix", "docs"]},
+    "complexity": {"enum": ["S", "M", "L"]},
+    "risk": {"enum": ["low", "normal", "high"]},
+    "spec_ref": {"type": "string"},
+    "inputs": {"type": "array", "items": {"type": "string"}},
+    "acceptance_criteria": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+    "assigned_model": {"enum": ["haiku", "sonnet", "opus", "auto"]},
+    "design_skill": {"enum": [null, "hallmark", "design-taste-frontend", "impeccable", "emil-design-eng"]},
+    "budget": {
+      "type": "object",
+      "properties": {"max_tokens": {"type": "integer"}, "max_rounds": {"type": "integer"}}
+    },
+    "status": {"enum": ["todo", "in_progress", "in_review", "revise", "done", "escalated"]}
+  }
+}

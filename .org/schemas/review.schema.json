@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ponytail review verdict",
+  "type": "object",
+  "required": ["ticket", "round", "reviewer", "verdict", "stage1", "findings", "criteria_met", "criteria_missed"],
+  "properties": {
+    "ticket": {"type": "string"},
+    "round": {"type": "integer", "minimum": 1},
+    "reviewer": {"enum": ["ponytail-reviewer", "ponytail-reviewer-senior"]},
+    "verdict": {"enum": ["approve", "revise", "escalate"]},
+    "stage1": {"enum": ["pass", "fail"]},
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["file", "severity", "issue"],
+        "properties": {
+          "file": {"type": "string"},
+          "line": {"type": "integer"},
+          "severity": {"enum": ["blocker", "major", "minor"]},
+          "source": {"enum": ["stage1", "ponytail-review", "acceptance", "design-audit", "animation", "security"]},
+          "issue": {"type": "string"},
+          "fix_hint": {"type": "string"}
+        }
+      }
+    },
+    "criteria_met": {"type": "array", "items": {"type": "string"}},
+    "criteria_missed": {"type": "array", "items": {"type": "string"}},
+    "needs_human_signoff": {"type": "boolean"},
+    "notes": {"type": "string"}
+  }
+}

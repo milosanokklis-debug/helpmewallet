@@ -1,0 +1,24 @@
+{
+  "id": "DEV-007",
+  "team": "dev",
+  "parent": null,
+  "title": "Email-auth test site: Express server + SMTP-to-Mailpit + verify logic",
+  "type": "feature",
+  "complexity": "L",
+  "risk": "normal",
+  "spec_ref": ".org/artifacts/specs/DEV-007.md",
+  "inputs": [],
+  "acceptance_criteria": [
+    "Node/Express site in its own folder with its own run command on a different port (e.g. 8890); README/run docs included",
+    "Sign-up on /join sends a REAL verification email via SMTP to Mailpit; account inactive until the link is clicked / code entered at /verify; login at /signin (deliberately unconventional, different paths)",
+    "Login before verification is rejected; after verification it succeeds and exposes a success signal (e.g. authed session + /me-style endpoint or profile)",
+    "SMTP target configurable via env (documented: how to point it at Mailpit from docker-compose); degrades with a clear error if SMTP is down"
+  ],
+  "assigned_model": "sonnet",
+  "design_skill": null,
+  "budget": {
+    "max_tokens": 20000,
+    "max_rounds": 2
+  },
+  "status": "todo"
+}

@@ -1,0 +1,25 @@
+{
+  "id": "DEV-004",
+  "team": "dev",
+  "parent": null,
+  "title": "Login + success check + logout + re-login + CAPTCHA stop; 8889 e2e",
+  "type": "feature",
+  "complexity": "L",
+  "risk": "high",
+  "spec_ref": ".org/artifacts/specs/DEV-004.md",
+  "inputs": [],
+  "acceptance_criteria": [
+    "Login flow fills discovered login form with stored creds and submits",
+    "Success check via multiple signals: logout control present, account/profile reachable, auth cookie/token set, or redirect away from login form",
+    "After success, logs out then logs back in with stored creds and re-confirms session",
+    "CAPTCHA/bot-detection detection: if detected, STOP and report it as a failure reason; never click/read/solve it; covered by a unit test on a fixture",
+    "End-to-end run against http://localhost:8889 passes the full chain discovery->signup->login->success->logout->re-login; evidence captured; no secrets in output"
+  ],
+  "assigned_model": "sonnet",
+  "design_skill": null,
+  "budget": {
+    "max_tokens": 20000,
+    "max_rounds": 2
+  },
+  "status": "todo"
+}

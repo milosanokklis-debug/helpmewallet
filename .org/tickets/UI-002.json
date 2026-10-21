@@ -1,0 +1,25 @@
+{
+  "id": "UI-002",
+  "team": "ui",
+  "parent": null,
+  "title": "Email-auth test site pages (/join, /verify, /signin)",
+  "type": "design",
+  "complexity": "M",
+  "risk": "normal",
+  "spec_ref": ".org/artifacts/specs/UI-002.md",
+  "inputs": [
+    ".org/artifacts/specs/DEV-007.md"
+  ],
+  "acceptance_criteria": [
+    "Server-rendered pages for /join (sign-up), /verify (enter code / landing for link), /signin (login), and a post-login profile/success page",
+    "Forms have real labels, input types and autocomplete attrs so the agent's semantic discovery is genuinely exercised (not reliant on conventional route names)",
+    "Pages wire to the Express endpoints from the server ticket; clear visible success/error states"
+  ],
+  "assigned_model": "haiku",
+  "design_skill": "hallmark",
+  "budget": {
+    "max_tokens": 20000,
+    "max_rounds": 2
+  },
+  "status": "todo"
+}

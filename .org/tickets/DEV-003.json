@@ -1,0 +1,25 @@
+{
+  "id": "DEV-003",
+  "team": "dev",
+  "parent": null,
+  "title": "Form filling + signup flow",
+  "type": "feature",
+  "complexity": "L",
+  "risk": "normal",
+  "spec_ref": ".org/artifacts/specs/DEV-003.md",
+  "inputs": [],
+  "acceptance_criteria": [
+    "Semantic field mapper: email, username, password, confirm-password, name, phone, terms/consent checkbox, select/dropdown",
+    "Generates valid test values respecting visible constraints (username 3-24 [a-z0-9_], password 8-128); confirm matches password; checks consent boxes",
+    "Handles multi-step forms, reads client-side validation error text and retries with adjusted values, handles modals/SPA re-renders",
+    "Against localhost:8889: discovers /register, creates a test account, result confirmed via API/UI signal; credentials stored only in gitignored seed, never printed",
+    "Unit tests for the field classifier/value generator on fixtures; pytest green"
+  ],
+  "assigned_model": "sonnet",
+  "design_skill": null,
+  "budget": {
+    "max_tokens": 20000,
+    "max_rounds": 2
+  },
+  "status": "todo"
+}
