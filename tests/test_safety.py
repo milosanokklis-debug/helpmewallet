@@ -12,6 +12,9 @@ def test_allowed(u):
 @pytest.mark.parametrize("u", [
     "https://example.com", "http://test", "https://evil.com/?a=localhost", "http://localhost@evil.com/",
     "https://localhost.evil.com", "https://eviltest", "ftp://localhost", "localhost", "", "http://evil.com#.test",
+    "http://evil.com\\@localhost/", "http://evil.com\\.test/", "http://evil.com\\@a.test/", "http://evil.test.example.com",
+    "http://..test", "http://a..test", "http://localhost:abc", "http://u:p@localhost/", "http://local\nhost",
+    "http://localhost\x00.evil.com", "http://löcalhost",
 ])
 def test_refused(u):
     with pytest.raises(HostRefused):
@@ -36,3 +39,47 @@ def test_env_seed_only_env_test(tmp_path):
     p = sec.write_env_seed(path=tmp_path / ".env.test")
     pw = dict(l.split("=", 1) for l in p.read_text().splitlines())["TEST_PASSWORD"]
     assert pw not in sec.redact(f"pw is {pw}")
+
+
+def test_refusal_does_not_echo_password():
+    with pytest.raises(HostRefused) as e:
+        check_url("ftp://user:SECRETpw@localhost")
+    assert "SECRETpw" not in str(e.value)
+
+
+def test_check_url_fails_closed_on_bad_config(tmp_path, monkeypatch):
+    import authagent.allowlist as a
+    monkeypatch.setattr(a.load_allowlist, "__defaults__", (tmp_path / "nope.yaml",))
+    with pytest.raises(HostRefused):
+        check_url("http://localhost")
+
+
+def test_config_shape(tmp_path):
+    from authagent.allowlist import load_allowlist
+    for body in ["defaults: localhost\n", 'defaults: ["*.com"]\n', "user_hosts: [1]\n", "- x\n"]:
+        f = tmp_path / "a.yaml"
+        f.write_text(body)
+        with pytest.raises(HostRefused):
+            load_allowlist(f)
+    with pytest.raises(HostRefused):
+        check_url("http://l", allowlist="localhost")
+    with pytest.raises(HostRefused):
+        check_url("http://a.com", allowlist=["*.com"])
+
+
+@pytest.mark.parametrize("t", [
+    "TEST_PASSWORD=abc123", '{"password": "abc123"}', "access_token=abc123", "auth_token: abc123", "csrf_token=abc123",
+    "sessionid=abc123", "pwd=abc123", '{"name": "sid", "cookie": "abc123"}', "Authorization: Bearer abc123",
+])
+def test_redaction_forms(t):
+    assert "abc123" not in sec.redact(t)
+
+
+def test_fresh_process_loads_seed(tmp_path):
+    p = sec.write_env_seed({"TEST_EMAIL": "x@a.test", "TEST_PASSWORD": "Zq9-unique"}, path=tmp_path / ".env.test")
+    with pytest.raises(FileExistsError):
+        sec.write_env_seed(path=p)
+    sec._known.clear()
+    assert "Zq9-unique" in sec.redact("bare Zq9-unique here")  # not yet registered
+    sec.load_env_seed(p)
+    assert "Zq9-unique" not in sec.redact("bare Zq9-unique here")

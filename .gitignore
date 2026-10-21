@@ -9,3 +9,12 @@ __pycache__/
 runs/
 reports/
 output/
+.env.*
+!.env.test.example
+storage_state*.json
+*storage-state*.json
+auth.json
+.venv/
+venv/
+*.log
+logs/

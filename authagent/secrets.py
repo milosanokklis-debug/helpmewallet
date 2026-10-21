@@ -1,4 +1,5 @@
 """Credential generation (written only to gitignored .env.test) and log redaction."""
+import os
 import re
 import secrets as _s
 from pathlib import Path
@@ -6,10 +7,12 @@ from pathlib import Path
 ENV_PATH = Path(__file__).resolve().parent.parent / ".env.test"
 MASK = "[REDACTED]"
 _known = set()
-# key=value / header-style secrets, including cookies
+# key=value / JSON / header-style secrets; keyword may sit inside a longer name (TEST_PASSWORD)
 _PATTERN = re.compile(
-    r"(?i)\b(password|passwd|token|secret|api[_-]?key|authorization|cookie|set-cookie)\b(\s*[:=]\s*)([^\r\n]*)"
+    r"(?i)([\w-]*(?:password|passwd|pwd|token|secret|api[_-]?key|authorization|cookie|session(?:id)?)[\w-]*[\"']?\s*[:=]\s*)"
+    r"(?:\"[^\"\r\n]*\"|'[^'\r\n]*'|[^\r\n,;}]*)"
 )
+_JWT = re.compile(r"eyJ[\w-]+\.[\w-]+\.[\w-]*")
 
 
 def register_secret(value):
@@ -18,11 +21,11 @@ def register_secret(value):
 
 
 def redact(text):
-    """Mask registered secret values and any password/token/cookie key=value pairs."""
+    """Mask registered secret values, key=value/JSON secrets, and JWTs."""
     text = str(text)
     for v in sorted(_known, key=len, reverse=True):
         text = text.replace(v, MASK)
-    return _PATTERN.sub(lambda m: m.group(1) + m.group(2) + MASK, text)
+    return _JWT.sub(MASK, _PATTERN.sub(lambda m: m.group(1) + MASK, text))
 
 
 def safe_print(*args):
@@ -33,13 +36,29 @@ def generate_creds(domain="authagent.test"):
     return {"TEST_EMAIL": f"agent-{_s.token_hex(4)}@{domain}", "TEST_PASSWORD": _s.token_urlsafe(18)}
 
 
-def write_env_seed(creds=None, path=ENV_PATH):
-    """Write creds to .env.test only; registers them for redaction. Refuses any other filename."""
+def load_env_seed(path=ENV_PATH):
+    """Read .env.test and register every value for redaction. The way callers obtain creds."""
+    creds = {}
+    for line in Path(path).read_text(encoding="utf-8").splitlines():
+        k, sep, v = line.partition("=")
+        if sep and not line.startswith("#"):
+            creds[k.strip()] = v.strip()
+            register_secret(v.strip())
+    return creds
+
+
+def write_env_seed(creds=None, path=ENV_PATH, overwrite=False):
+    """Write creds to .env.test only (0600, never clobbers unless overwrite=True); registers them."""
     path = Path(path)
     if path.name != ".env.test":
         raise ValueError("credentials may only be written to .env.test")
     creds = creds or generate_creds()
-    path.write_text("".join(f"{k}={v}\n" for k, v in creds.items()), encoding="utf-8")
+    if any("\n" in str(v) or "\r" in str(v) for v in creds.values()):
+        raise ValueError("credential values must be single-line")
+    flags = os.O_CREAT | os.O_WRONLY | (os.O_TRUNC if overwrite else os.O_EXCL)
+    # shortcut: does not verify the file is gitignored; .gitignore rule + stage1 secret-scan cover it
+    with os.fdopen(os.open(path, flags, 0o600), "w", encoding="utf-8") as f:
+        f.write("".join(f"{k}={v}\n" for k, v in creds.items()))
     for v in creds.values():
         register_secret(v)
     return path
