@@ -15,3 +15,5 @@ time,ticket,agent,model,tokens_in,tokens_out,round,note
 2026-10-21T18:25:57,DEV-003,dev-lead,sonnet,20000,1000,2,"revision: value generator fixed, 65 tests"
 2026-10-21T18:25:57,DEV-004,ponytail-reviewer-senior,sonnet,71000,2000,1,senior review -> revise (4 majors incl secret leak)
 2026-10-21T18:27:31,DEV-003,ponytail-reviewer,sonnet,22000,1000,2,re-review -> approve
+2026-10-21T18:32:44,DEV-004,dev-lead,sonnet,48000,1500,2,"revision: 4 majors+minors+authed-HTML proof, 73 tests, live e2e pass"
+2026-10-21T18:43:09,DEV-004,ponytail-reviewer-senior,sonnet,60000,1500,2,senior re-review -> approve; proof artifacts verified

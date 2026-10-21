@@ -26,3 +26,6 @@ localhost:8889 is DOWN (connection refused). Coordinator verified DEV-001 indepe
 
 ## 2026-10-21 Sign-off + 8889 back up
 User EXPLICITLY signed off on DEV-001 (risk:high) -> marked done. localhost:8889 confirmed back UP (200) -> DEV-004 full live e2e can run and DEV-002's crawl is to be re-confirmed within it. DEV-004 still needs its own user sign-off before done (risk:high).
+
+## 2026-10-21 DEV-004: capture authenticated HTML as login proof
+New user requirement folded into DEV-004 (risk:high): after success, capture the authenticated page HTML (page.content()) in the same authed context on the post-login landing (and profile if reachable), and again on re-login; redact() it; save runs/e2e-<host>-<ts>.html; record path + redacted authenticated_html/proof excerpt in the JSON report; CLI prints path + one-line confirmation only. Test: captured HTML has an authed marker and NOT the generated password.

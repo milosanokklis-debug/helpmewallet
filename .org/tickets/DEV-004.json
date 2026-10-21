@@ -13,7 +13,8 @@
     "Success check via multiple signals: logout control present, account/profile reachable, auth cookie/token set, or redirect away from login form",
     "After success, logs out then logs back in with stored creds and re-confirms session",
     "CAPTCHA/bot-detection detection: if detected, STOP and report it as a failure reason; never click/read/solve it; covered by a unit test on a fixture",
-    "End-to-end run against http://localhost:8889 passes the full chain discovery->signup->login->success->logout->re-login; evidence captured; no secrets in output"
+    "End-to-end run against http://localhost:8889 passes the full chain discovery->signup->login->success->logout->re-login; evidence captured; no secrets in output",
+    "After the login success check passes, capture the authenticated page HTML (page.content()) in the SAME authed browser context, on the post-login landing page and the account/profile page if reachable; do the same on the re-login step. Run it through redact() before storing/showing (never persist/print a raw credential or token). Save as runs/e2e-<host>-<ts>.html, record that path in the JSON report, and include redacted authenticated_html (or at least a proof excerpt: <title> + an authed marker such as the logout control/username) in the JSON. CLI/e2e prints the saved path + a one-line confirmation, not the whole blob. Add a test: the captured authed HTML contains an authed marker (logout control/username) AND does NOT contain the generated password."
   ],
   "assigned_model": "sonnet",
   "design_skill": null,
@@ -21,5 +22,5 @@
     "max_tokens": 20000,
     "max_rounds": 2
   },
-  "status": "revise"
+  "status": "in_review"
 }
