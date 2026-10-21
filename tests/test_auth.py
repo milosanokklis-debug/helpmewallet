@@ -60,5 +60,5 @@ def test_login_stops_on_captcha(ctxpage):
 
 
 def test_success_needs_two_signals():
-    assert not is_authenticated({"logout_control": False, "left_login_page": True, "session_set": False, "me_user": False})
-    assert is_authenticated({"logout_control": True, "left_login_page": False, "session_set": False, "me_user": True})
+    assert not is_authenticated({"logout_control": False, "left_login_page": True, "browser_state_set": False, "me_user": False})
+    assert is_authenticated({"logout_control": True, "left_login_page": False, "browser_state_set": False, "me_user": True})

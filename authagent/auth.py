@@ -36,7 +36,7 @@ def session_signals(page, ctx, base_cookies, login_path):
     """Independent evidence of an authenticated session. Names/booleans only, never values."""
     return {"logout_control": _logout_control(page) is not None,
             "left_login_page": urlsplit(page.url).path.rstrip("/") != login_path.rstrip("/"),
-            "session_set": bool({c["name"] for c in ctx.cookies()} - base_cookies),
+            "browser_state_set": bool({c["name"] for c in ctx.cookies()} - base_cookies),
             "me_user": _me(page)}
 
 
