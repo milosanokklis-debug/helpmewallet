@@ -57,7 +57,7 @@ def test_constraints_and_values(page):
 
 def test_adjust_from_errors():
     adj = {}
-    assert adjust_from_errors(["Password must be at least 40 characters"], adj)
+    assert adjust_from_errors(["Password must be at least 14 characters"], adj)
     assert adj["password_min"] == 14
     adjust_from_errors(["Username already taken"], adj)
     assert adj["regen"] == 1
