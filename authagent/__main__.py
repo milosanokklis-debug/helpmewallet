@@ -1,4 +1,5 @@
 import argparse
+import json
 
 p = argparse.ArgumentParser(prog="authagent", description="Authorized auth-flow testing agent (allowlist-gated).")
 p.add_argument("--check-url", metavar="URL", help="verify URL passes the allowlist")
@@ -8,33 +9,28 @@ p.add_argument("--max-pages", type=int, default=25)
 p.add_argument("--signup", metavar="URL", help="discover and fill the signup form; creds go to .env.test only")
 p.add_argument("--e2e", metavar="URL", help="discover, signup, login, logout, re-login (allowlist-gated)")
 a = p.parse_args()
-if a.e2e:
-    from .allowlist import HostRefused
-    from .auth import e2e, report
+
+
+def run(fn):
+    """Any failure exits with only the redacted first line: Playwright tracebacks can embed filled values."""
+    from .auth import failure_reason
     try:
-        raise SystemExit(0 if report(e2e(a.e2e)) else 1)
-    except HostRefused as e:
-        raise SystemExit(str(e))
+        return fn()
+    except Exception as e:
+        raise SystemExit(failure_reason(e)) from None
+
+
+if a.e2e:
+    from .auth import e2e, report
+    raise SystemExit(0 if run(lambda: report(e2e(a.e2e))) else 1)
 if a.signup:
-    import json
-    from .allowlist import HostRefused
     from .fill import signup
     from .secrets import safe_print
-    try:
-        safe_print("signup result:", json.dumps(signup(a.signup)))
-    except HostRefused as e:
-        raise SystemExit(str(e))
+    safe_print("signup result:", json.dumps(run(lambda: signup(a.signup))))
 if a.crawl:
-    from .allowlist import HostRefused
     from .crawl import crawl, report, save_and_diff
-    try:
-        sm = crawl(a.crawl, a.depth, a.max_pages)
-    except HostRefused as e:
-        raise SystemExit(str(e))
+    sm = run(lambda: crawl(a.crawl, a.depth, a.max_pages))
     report(sm, save_and_diff(sm))
 if a.check_url:
-    from .allowlist import HostRefused, check_url
-    try:
-        print("allowed:", check_url(a.check_url))
-    except HostRefused as e:
-        raise SystemExit(str(e))
+    from .allowlist import check_url
+    print("allowed:", run(lambda: check_url(a.check_url)))

@@ -51,17 +51,21 @@ FIELDS_JS = """() => {
   return {fields, buttons, errors: [...errs].slice(0, 6), text: t(root).slice(0, 500)};
 }"""
 
+FILL_TIMEOUT = 5000  # ms
 CONSENT = re.compile(r"terms|consent|agree|accept|privacy|policy|tos|conditions", re.I)
 SUBMIT_WORDS = re.compile(r"sign[\s-]?up|register|create|join|continue|next|submit|get started|finish", re.I)
 SUCCESS_TEXT = re.compile(r"check your (e-?mail|inbox)|verif|confirmation|welcome|success|account (has been )?created", re.I)
 
 
+CAPTCHA_FIELD = re.compile(r"captcha|robot|human|challenge", re.I)
 CAPTCHA_JS = """() => {
-  const sel = '.g-recaptcha,.h-captcha,.cf-turnstile,[data-sitekey],#recaptcha,[class*=captcha i],[id*=captcha i],' +
-    'iframe[src*=recaptcha],iframe[src*=hcaptcha],iframe[src*=turnstile],iframe[src*=captcha i],iframe[src*=arkoselabs],iframe[src*=funcaptcha]';
+  const sel = '.g-recaptcha,.h-captcha,.cf-turnstile,.grecaptcha-badge,[data-sitekey],#recaptcha,[class*=captcha i],[id*=captcha i],' +
+    '[name*=captcha i],[aria-label*=captcha i],[placeholder*=captcha i],img[src*=captcha i],#challenge-form,#cf-challenge-running,.cf-browser-verification,' +
+    'iframe[src*=recaptcha],iframe[src*=hcaptcha],iframe[src*=turnstile],iframe[src*=captcha i],iframe[src*=arkoselabs],iframe[src*=funcaptcha],iframe[src*="challenges.cloudflare"]';
   const el = document.querySelector(sel);
   if (el) return (typeof el.className === 'string' && el.className ? el.className : el.tagName).slice(0, 40);
-  return /i.?m not a robot|verify (that )?you are (a )?human|are you a human/i.test(document.body.innerText) ? 'human-check text' : null;
+  const txt = document.body.innerText + ' ' + document.title;
+  return /i.?m not a robot|verify (that )?you are (a )?human|are you a human|checking your browser|just a moment|unusual traffic/i.test(txt) ? 'human-check text' : null;
 }"""
 
 
@@ -218,6 +222,8 @@ def fill_step(page, d, creds, adj):
     """Fill every mapped field in the current extraction. Returns list of roles filled (never values)."""
     roles, seen_pw = [], False
     for f in d["fields"]:
+        if CAPTCHA_FIELD.search(_blob(f)):
+            continue  # never touch a captcha-like field
         role = map_field(f, seen_pw)
         seen_pw = seen_pw or f["type"] == "password"
         loc = page.locator(f'[data-aa="{f["idx"]}"]')
@@ -227,9 +233,9 @@ def fill_step(page, d, creds, adj):
                 creds["TEST_PASSWORD"], creds["_dirty"] = pw, True
             creds["_pw_current"] = pw
             sec.register_secret(pw)
-            loc.fill(pw)
+            loc.fill(pw, timeout=FILL_TIMEOUT)
         elif role == "confirm_password":
-            loc.fill(creds.get("_pw_current") or gen_value("password", f, creds, adj))
+            loc.fill(creds.get("_pw_current") or gen_value("password", f, creds, adj), timeout=FILL_TIMEOUT)
         elif role in ("consent",):
             loc.check()
         elif role == "select":
@@ -242,13 +248,13 @@ def fill_step(page, d, creds, adj):
             else:
                 continue
         elif role == "other" and f.get("required") and f["type"] in ("text", "textarea", "search"):
-            loc.fill("test")
+            loc.fill("test", timeout=FILL_TIMEOUT)
         elif role in ("checkbox", "other"):
             continue
         else:
             v = gen_value(role, f, creds, adj)
             if v is not None:
-                loc.fill(v)
+                loc.fill(v, timeout=FILL_TIMEOUT)
         roles.append(role)
     return roles
 
@@ -263,6 +269,9 @@ def run_signup(page, creds, max_steps=4, max_retries=3, persist=None):
     adj, steps, attempts, trail = {}, 0, 0, []
     last_sig = None
     while steps < max_steps:
+        cap = detect_captcha(page)  # top of every step: widgets can load late or appear on step 2+
+        if cap:
+            return _result("captcha_detected", steps, attempts, trail, [f"CAPTCHA/bot check detected ({cap}); stopped"], page, posts)
         d = page.evaluate(FIELDS_JS)
         if not d["fields"] and not d["buttons"]:
             break
@@ -285,8 +294,11 @@ def run_signup(page, creds, max_steps=4, max_retries=3, persist=None):
         btn = _pick_submit(d["buttons"])
         if not btn:
             return _result("no_submit", steps, attempts, trail, [], page, posts)
+        cap = detect_captcha(page)  # and again right before the submit click
+        if cap:
+            return _result("captcha_detected", steps, attempts, trail, [f"CAPTCHA/bot check detected ({cap}); stopped"], page, posts)
         n = len(posts)
-        page.locator(f'[data-aa="b{btn["idx"]}"]').click()
+        page.locator(f'[data-aa="b{btn["idx"]}"]').click(timeout=FILL_TIMEOUT)
         try:
             page.wait_for_load_state("networkidle", timeout=4000)
         except Exception:

@@ -62,3 +62,15 @@ def write_env_seed(creds=None, path=ENV_PATH, overwrite=False):
     for v in creds.values():
         register_secret(v)
     return path
+
+
+_HTML_TOKEN = re.compile(r"""(?i)(<(?:meta|input)[^>]*(?:csrf|token|nonce|secret)[^>]*?(?:content|value)=)(["'])[^"']*\2""")
+
+
+def redact_html(html):
+    """Redaction for stored page HTML: registered secret values, JWTs, csrf/token meta/input values.
+    shortcut: not the key=value regex (it would swallow whole minified lines of markup)."""
+    html = str(html)
+    for v in sorted(_known, key=len, reverse=True):
+        html = html.replace(v, MASK)
+    return _HTML_TOKEN.sub(lambda m: m.group(1) + '"' + MASK + '"', _JWT.sub(MASK, html))
