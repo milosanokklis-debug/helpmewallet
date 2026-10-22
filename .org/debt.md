@@ -31,3 +31,11 @@ Collected from `shortcut:` comments (/ponytail-debt).
 - Screenshots embedded as base64 (HTML ~3MB); their pixels can't be grepped for leaks.
 - Artifact links use only the file basename, so report.html must stay beside the artifacts.
 - DEV-008 (approved): the Mailpit-down skip path was confirmed from code, not exercised live (Mailpit was up during review).
+
+## Final design audit follow-ups (acceptable to ship as-is; none blocking)
+HTML report (authagent/report_html.py):
+- Worth doing: collapse passing steps (<details>, failing open) + add a "N of M steps passed" count under the badge.
+- Worth doing: report.html is ~3MB from base64-embedded screenshots; embed only failed-step + last-pass shots, or link the PNGs beside the report.
+- Polish: neutral border for passing steps (reserve green for badge/✓); larger .st; show HH:MM:SS + duration (full ISO only in header); humanize dl key names + render signals as inline chips; collapse Discovered routes/Artifacts; @media print rules.
+Test-site pages (testsite-email/views/*): no changes required (semantic, accessible, clear states). Optional: reorder verify.html hint above status; extract shared /style.css if edited again; button:focus-visible instead of :focus.
+Audit caveat: the failure banner / failed-step styling / "No routes discovered." empty state are verified in code only, never rendered with a real failed report.
