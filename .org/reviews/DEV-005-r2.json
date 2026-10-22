@@ -1,0 +1,4 @@
+{"ticket":"DEV-005","round":2,"reviewer":"ponytail-reviewer","verdict":"approve","stage1":"pass","findings":[],
+"criteria_met":["compose Mailpit","pluggable provider + Mailpit impl","link/OTP extraction + auto-detect","unit tests on fixtures; pytest 93 passed","Mailpit-down is a non-failing SKIP with clear message, bounded timeouts","real Mailpit roundtrip and live 8890 OTP+link test run (not skipped)"],
+"criteria_missed":[],
+"notes":"r1 majors fixed: _email_step records skipped step with pass=True and stops chain; report prints SKIP. complete_verification covered via FakeProvider (otp, link, off-allowlist no-navigation asserting no request to evil host, unreachable, captcha, no-email). OTP, link and query values registered immediately after extraction. Low-severity nit: len>=6 filter on query values skips shorter tokens."}

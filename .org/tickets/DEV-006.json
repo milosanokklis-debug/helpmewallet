@@ -13,7 +13,9 @@
     "Per-run JSON report written to a run dir: step timeline with timestamps, discovered routes, screenshots paths, pass/fail per step, clear failure reasons",
     "Secrets (generated creds, cookies) NEVER appear in the JSON report or stdout; redaction unit-tested against the real report object",
     "Exit code nonzero on failure/refusal; allowlist refusal surfaces as a clear message and nonzero exit",
-    "CLI contract MUST remain exactly: python -m authagent run --url <site> (a coordinator skill /helpmewallet depends on it). Do not rename or restructure this subcommand/flag."
+    "CLI contract MUST remain exactly: python -m authagent run --url <site> (a coordinator skill /helpmewallet depends on it). Do not rename or restructure this subcommand/flag.",
+    "Fix the invalid-JSON report bug: runs/e2e-localhost_8889.json is invalid because the fresh_session key is masked to [REDACTED] by redact() (keys containing session/cookie/secret get masked). Rename that key (as done for the signal key in commit 099480d) so the emitted JSON is VALID and parseable. Add a test asserting the written report parses with json.load.",
+    "Deliver the EXACT CLI contract `python -m authagent run --url <site>` (a `run` subcommand) because the installed /helpmewallet skill invokes exactly that; keep the existing --e2e/--crawl/--signup flags working too."
   ],
   "assigned_model": "haiku",
   "design_skill": null,

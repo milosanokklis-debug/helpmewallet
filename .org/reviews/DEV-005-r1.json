@@ -1,0 +1,25 @@
+{
+ "ticket": "DEV-005", "round": 1, "reviewer": "ponytail-reviewer", "verdict": "revise", "stage1": "pass",
+ "findings": [
+  {"file": "authagent/auth.py", "line": 270, "severity": "major", "source": "acceptance",
+   "issue": "Mailpit-down fallback is a FAIL, not a skip. complete_verification returns {ok:False, skipped:True}, but _email_step does step('email_verify', ok or required is False) and returns False, so step pass=False and the e2e aborts before login. Criterion requires the email e2e to SKIP cleanly with a clear message. (It does not hang: reachable() uses a 2s timeout and latest_message has a deadline.)",
+   "fix_hint": "In _email_step, if r.get('skipped'): record step('email_verify', True, skipped=r['reason']) and decide how to continue (or end the e2e as skipped) rather than failing. Add a test with a fake unreachable EmailProvider."},
+  {"file": "tests/test_mail.py", "severity": "major", "source": "acceptance",
+   "issue": "complete_verification (link branch, OTP branch, off-allowlist-link-only email, provider-unreachable, captcha) has no test; only extractors and the provider are covered. The committed e2e reports method=otp only, so the live link path is not reproducible from the repo. Safety point 1 is true by construction (extract_link drops non-allowlisted hosts; goto also runs under guard_context) but the end-to-end behavior with an off-allowlist-only email (expect reason=no_link_or_code_in_email, no navigation) is unproven.",
+   "fix_hint": "Add a FakeProvider (proves pluggability too) plus a Playwright page fixture or stub; assert no goto for evil host, link method works, and skipped result when reachable() is False."},
+  {"file": "authagent/mail.py", "line": 148, "severity": "minor", "source": "security",
+   "issue": "register_secret(otp) runs only at the end, after fill/click. Any exception or print in between is not redacted. The link token is never registered.",
+   "fix_hint": "Register otp (and the link) immediately after extraction."}
+ ],
+ "criteria_met": [
+  "docker-compose.yml runs Mailpit (SMTP 1025 + REST 8025), bound to 127.0.0.1",
+  "Pluggable EmailProvider ABC; MailpitProvider polls newest message to the per-run address",
+  "Link/OTP extraction and auto-detection of check-your-email / enter-code states (8890 e2e passed with method=otp)",
+  "Unit tests for link extraction and OTP parsing on fixtures; pytest 85 passed (run by reviewer)",
+  "Real SMTP->REST roundtrip integration test (skips only when unreachable)"
+ ],
+ "criteria_missed": [
+  "Email e2e SKIPS cleanly when Mailpit is unreachable (currently fails the e2e)"
+ ],
+ "notes": "Checked points: (1) allowlist: met in code, e2e behavior untested. (2) no leaks: runs/e2e-localhost_8890.json and site log contain no OTP/token/link; step output carries only method/reason. (3) no hang: met; skip semantics wrong. (4) tests green and meaningful for extraction (includes evil-host link and unsubscribe filtering). (5) pluggable: yes, two-method ABC, flow only depends on it. IMAP correctly not built."
+}

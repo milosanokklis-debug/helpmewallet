@@ -13,7 +13,8 @@
     "pytest suite ties together: unit tests (allowlist refusal, classification, email/OTP, redaction), the 8889 e2e, and the email-auth-site e2e that skips cleanly when Docker is down",
     ".env.test.example documented; confirms node_modules / Playwright browsers / .env.test are gitignored",
     "Docker is UP now: the email-auth-site e2e MUST ACTUALLY RUN and PASS end-to-end (docker compose up -d Mailpit, start the test site, full discovery->join/verify->signin->success, extract link/OTP from Mailpit REST). The clean-skip path stays only as a fallback and must NOT trigger now.",
-    "README documents the project skill /helpmewallet <localsite> (at .claude/skills/helpmewallet/SKILL.md, authored by the coordinator - DO NOT overwrite it): what it does and an example invocation, alongside the raw CLI."
+    "README documents the project skill /helpmewallet <localsite> (at .claude/skills/helpmewallet/SKILL.md, authored by the coordinator - DO NOT overwrite it): what it does and an example invocation, alongside the raw CLI.",
+    "The 8890 email-auth test site's entry URL is /join (its root 404s with no links, by design, to force real discovery), so the live email e2e MUST start at http://localhost:8890/join. README must note that for a site with no root links you pass the entry path."
   ],
   "assigned_model": "haiku",
   "design_skill": null,
