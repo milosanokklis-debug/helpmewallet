@@ -1,0 +1,6 @@
+{"ticket":"DEV-008","round":1,"reviewer":"ponytail-reviewer","verdict":"approve","stage1":"pass",
+"findings":[
+{"file":"tests/conftest.py","severity":"minor","source":"ponytail-review","issue":"Fixture skip paths (Mailpit/node down) not exercised in this run since both were up; code review shows pytest.skip with bounded waits (20s Mailpit, 10s site start, 90s docker timeout), and finally-block terminates the node process.","fix_hint":"Optional: add a monkeypatched test of the skip path."}],
+"criteria_met":["README setup/run/report/skill/allowlist/Mailpit/gitignore/.env.test.example with /join entry note","SKILL.md unchanged (last touched in 5dcb3d8, not in DEV-008 commit)","pytest ties unit + 8889 e2e + 8890 /join e2e","8890 fixture spawns and tears down its own node instance","Clean skip via pytest.skip when Mailpit/node down","AUTHAGENT_ENV_FILE / AUTHAGENT_RUNS_DIR redirect protects real .env.test and runs","Both e2es assert no credential in stdout/report/HTML","Live email e2e ran and passed (not skipped)"],
+"criteria_missed":[],
+"notes":"pytest run by reviewer: 107 passed, 0 skipped, 114s."}

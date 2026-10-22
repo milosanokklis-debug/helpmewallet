@@ -25,3 +25,5 @@ time,ticket,agent,model,tokens_in,tokens_out,round,note
 2026-10-21T22:50:30,DEV-006,ponytail-reviewer,sonnet,35000,1000,1,"approve CLI+JSON; 105 tests, exit codes verified"
 2026-10-21T22:50:31,UI-001,ui-lead,sonnet,77000,2000,1,"HTML report renderer + report subcommand, 5 tests"
 2026-10-21T22:56:40,UI-001,ponytail-reviewer,sonnet,32000,1000,1,"approve HTML report; no leaks, 105 tests"
+2026-10-21T23:04:45,DEV-008,dev-lead,sonnet,50000,1600,1,"README + full e2e suite, 107 tests, both live e2e pass"
+2026-10-21T23:09:25,DEV-008,ponytail-reviewer,sonnet,32000,1000,1,approve README + e2e suite; 107 passed

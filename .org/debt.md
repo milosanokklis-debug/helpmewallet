@@ -30,3 +30,4 @@ Collected from `shortcut:` comments (/ponytail-debt).
 - test_no_secret_values uses only generic regexes; it never checks the real .env.test values or a planted secret, so it is weak. Strengthen to assert the actual generated creds are absent.
 - Screenshots embedded as base64 (HTML ~3MB); their pixels can't be grepped for leaks.
 - Artifact links use only the file basename, so report.html must stay beside the artifacts.
+- DEV-008 (approved): the Mailpit-down skip path was confirmed from code, not exercised live (Mailpit was up during review).
