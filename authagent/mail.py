@@ -4,7 +4,7 @@ import time
 from abc import ABC, abstractmethod
 from html import unescape
 from html.parser import HTMLParser
-from urllib.parse import quote
+from urllib.parse import parse_qs, quote, urlsplit
 
 import requests
 
@@ -130,6 +130,13 @@ def complete_verification(page, provider, creds, timeout=30, prefer="otp"):
         return {"ok": False, "reason": "no_email_received"}
     link = extract_link(msg["text"], msg["html"])
     otp = extract_otp(msg["text"], msg["html"])
+    sec.register_secret(otp)  # register immediately so nothing downstream can print them
+    if link:
+        sec.register_secret(link)
+        for vals in parse_qs(urlsplit(link).query).values():
+            for v in vals:
+                if len(v) >= 6:
+                    sec.register_secret(v)
     d = page.evaluate(FIELDS_JS)
     code_field = next((f for f in d["fields"] if (f.get("autocomplete") or "") == "one-time-code" or
                        CODE_FIELD.search(" ".join(str(f.get(k) or "") for k in ("name", "id", "aria_label", "label", "placeholder")))), None)
@@ -157,5 +164,4 @@ def complete_verification(page, provider, creds, timeout=30, prefer="otp"):
     except Exception:
         pass  # shortcut: busy pages may never idle
     page.wait_for_timeout(500)
-    sec.register_secret(otp)
     return {"ok": _verified(page), "required": True, "method": method}

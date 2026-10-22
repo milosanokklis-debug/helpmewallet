@@ -270,13 +270,16 @@ def _email_step(url, signup_res, creds, headless, step):
         finally:
             b.close()
     ok = r.pop("ok")
+    if r.get("skipped"):  # provider genuinely unreachable: a distinct, non-failing outcome; the chain stops here
+        step("email_verify", True, skipped="Mailpit unreachable - skipping email verification (" + r["reason"] + ")")
+        return False
     step("email_verify", ok or r.get("required") is False, **r)
     return ok or r.get("required") is False
 
 
 def report(steps):
     for s in steps:
-        sec.safe_print(("PASS " if s["pass"] else "FAIL ") + json.dumps(s))
+        sec.safe_print(("SKIP " if s.get("skipped") else "PASS " if s["pass"] else "FAIL ") + json.dumps(s))
         for k, v in (s.get("authenticated_html") or {}).items():
             if isinstance(v, dict):
                 sec.safe_print(f"  saved {v['path']}: authed marker={v['authed_marker']} no_leak={v['no_leak']}")
