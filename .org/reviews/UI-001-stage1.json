@@ -1,0 +1,16 @@
+{
+  "ticket": "UI-001",
+  "pass": true,
+  "checks": [
+    {
+      "name": "pytest",
+      "ok": true,
+      "output": ""
+    },
+    {
+      "name": "secret-scan",
+      "ok": true,
+      "output": ""
+    }
+  ]
+}

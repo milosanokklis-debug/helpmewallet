@@ -16,3 +16,12 @@ Collected from `shortcut:` comments (/ponytail-debt).
 - Classifier test coverage thin (~6 of 47 tests are new classifier cases).
 - Cache re-validation has no age check.
 - Live 8889 crawl (/register=signup, /login=login) was waived while 8889 was down — RE-CONFIRM now that 8889 is back up (fold into DEV-004 e2e).
+
+## DEV-006 (approved) deferred minors
+- If an email step is SKIPPED and a later step really fails, exit code is 3 (skipped_email) instead of 1 (fail). Unlikely because the email step stops the chain, but note it.
+- Old runs/e2e-localhost_8889.json from before the fix still fails json.load (gitignored; a new --e2e run regenerates it).
+
+## UI-001 (built) follow-ups (pre-review)
+- Optionally call write_report_html(path) at end of run.py so every run emits report.html (DEV-008 can also call it).
+- 8889 report.html ~3MB because 4 screenshots inlined; lower EMBED_MAX if too heavy.
+- Failed-run layout only exercised by a synthetic unit test, not a real failed report.

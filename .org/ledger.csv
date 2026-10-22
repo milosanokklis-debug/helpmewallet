@@ -21,3 +21,6 @@ time,ticket,agent,model,tokens_in,tokens_out,round,note
 2026-10-21T22:20:45,DEV-005,ponytail-reviewer,sonnet,36000,1000,1,revise: skip-not-fail + missing verify tests
 2026-10-21T22:34:10,DEV-005,dev-lead,sonnet,40000,1400,2,"revision: clean skip + verify-branch tests, 93 tests"
 2026-10-21T22:36:13,DEV-005,ponytail-reviewer,sonnet,24000,1000,2,re-review -> approve
+2026-10-21T22:45:36,DEV-006,dev-lead,sonnet,46000,1500,1,"CLI run --url + valid JSON report, 100 tests, live runs exit 0"
+2026-10-21T22:50:30,DEV-006,ponytail-reviewer,sonnet,35000,1000,1,"approve CLI+JSON; 105 tests, exit codes verified"
+2026-10-21T22:50:31,UI-001,ui-lead,sonnet,77000,2000,1,"HTML report renderer + report subcommand, 5 tests"

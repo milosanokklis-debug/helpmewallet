@@ -13,6 +13,8 @@ r = sub.add_parser("run", help="full pipeline: allowlist, discovery, signup, (em
 r.add_argument("--url", required=True, help="site URL (an entry path such as /join may be included or passed via --entry)")
 r.add_argument("--entry", help="optional entry path, e.g. /join when the site root has no links")
 r.add_argument("--headed", action="store_true", help="show the browser")
+rp = sub.add_parser("report", help="render a run's report.json to a self-contained report.html next to it")
+rp.add_argument("report_json")
 a = p.parse_args()
 
 
@@ -25,6 +27,10 @@ def run(fn):
         raise SystemExit(failure_reason(e)) from None
 
 
+if a.cmd == "report":
+    from .report_html import write_report_html
+    print(write_report_html(a.report_json))
+    raise SystemExit(0)
 if a.cmd == "run":
     from .run import run as pipeline
     code, _ = run(lambda: pipeline(a.url, entry=a.entry, headless=not a.headed))
