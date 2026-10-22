@@ -25,3 +25,8 @@ Collected from `shortcut:` comments (/ponytail-debt).
 - Optionally call write_report_html(path) at end of run.py so every run emits report.html (DEV-008 can also call it).
 - 8889 report.html ~3MB because 4 screenshots inlined; lower EMBED_MAX if too heavy.
 - Failed-run layout only exercised by a synthetic unit test, not a real failed report.
+
+## UI-001 (approved) deferred minors
+- test_no_secret_values uses only generic regexes; it never checks the real .env.test values or a planted secret, so it is weak. Strengthen to assert the actual generated creds are absent.
+- Screenshots embedded as base64 (HTML ~3MB); their pixels can't be grepped for leaks.
+- Artifact links use only the file basename, so report.html must stay beside the artifacts.
