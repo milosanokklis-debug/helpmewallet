@@ -16,7 +16,8 @@ NOT_LOGIN_BTN = re.compile(r"google|github|facebook|apple|twitter|microsoft|forg
 ME_PROBES = ("/api/auth/me", "/api/me", "/me")  # shortcut: common session-probe paths, not exhaustive
 LOGOUT_PROBES = ("/api/auth/logout", "/logout", "/signout")
 FILL_TIMEOUT = 5000  # ms; a short timeout keeps failures fast (error text is redacted anyway)
-EVIDENCE_DIR = Path(__file__).resolve().parent.parent / "runs"
+ROOT = Path(__file__).resolve().parent.parent
+EVIDENCE_DIR = ROOT / "runs"
 ME_JS = """async (p) => { try { const r = await fetch(p, {credentials: 'include'}); if (!r.ok) return null;
   const j = await r.json(); return j && typeof j === 'object' ? j : null; } catch (e) { return null; } }"""
 POST_JS = """async (p) => { try { return (await fetch(p, {method: 'POST', credentials: 'include'})).status; } catch (e) { return 0; } }"""
@@ -111,7 +112,13 @@ def capture_html(page, label, creds):
     path = EVIDENCE_DIR / f"e2e-{host}-{time.strftime('%Y%m%d-%H%M%S')}-{label}.html"
     path.write_text(red, encoding="utf-8")
     user = creds.get("TEST_USERNAME") or creds.get("TEST_EMAIL") or ""
-    return {"path": f"runs/{path.name}", "title": sec.redact(page.title())[:80], "bytes": len(red),
+    shot = path.with_suffix(".png")
+    try:
+        page.screenshot(path=str(shot))
+    except Exception:
+        shot = None
+    rel = lambda q: q.relative_to(ROOT).as_posix() if q.is_relative_to(ROOT) else q.name
+    return {"path": rel(path), "screenshot": rel(shot) if shot else None, "title": sec.redact(page.title())[:80], "bytes": len(red),
             "authed_marker": {"logout_control": _logout_control(page) is not None, "username_visible": bool(user) and user in html},
             "no_leak": creds["TEST_PASSWORD"] not in red}
 
@@ -187,14 +194,14 @@ def save_evidence(url, steps):
     """Persist the redacted step list to runs/e2e-<host>.json (runs/ is gitignored)."""
     EVIDENCE_DIR.mkdir(exist_ok=True)
     name = "e2e-" + re.sub(r"[^a-z0-9.-]", "_", urlsplit(url).netloc.lower()) + ".json"
-    (EVIDENCE_DIR / name).write_text(sec.redact(json.dumps(steps, indent=1)), encoding="utf-8")
+    (EVIDENCE_DIR / name).write_text(json.dumps(sec.redact_obj(steps), indent=1), encoding="utf-8")
 
 
-def e2e(url, headless=True):
+def e2e(url, headless=True, info=None):
     """discovery -> signup -> login -> success check -> logout -> re-login. Never raises; no secrets in results."""
     steps = []
     try:
-        _e2e(url, headless, steps)
+        _e2e(url, headless, steps, info if info is not None else {})
     except Exception as e:
         steps.append({"step": "error", "pass": False, "reason": failure_reason(e)})
     try:
@@ -204,22 +211,31 @@ def e2e(url, headless=True):
     return steps
 
 
-def _e2e(url, headless, steps):
+def _e2e(url, headless, steps, info):
     from playwright.sync_api import sync_playwright
 
     from .crawl import crawl, guard_context
 
     check_url(url)
 
+    last = [time.time()]
+
     def step(name, ok, **kw):
-        steps.append({"step": name, "pass": bool(ok), **kw})
+        now = time.time()
+        steps.append({"step": name, "pass": bool(ok), "at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+                      "duration_s": round(now - last[0], 2), **kw})
+        last[0] = now
         return bool(ok)
 
     sm = crawl(url, depth=2, max_pages=25, headless=headless)
     forms = {urlsplit(u).path: f["classification"]["kind"] for u, p in sm["pages"].items() for f in p.get("forms", [])}
+    info["routes"] = [{"path": k, "form": v} for k, v in forms.items()]
     login_url = next((u for u, p in sm["pages"].items() for f in p.get("forms", []) if f["classification"]["kind"] == "login"), None)
     if not step("discovery", login_url and "signup" in forms.values(), forms=forms, pages=len(sm["pages"])):
         return
+    site = urlsplit(url).netloc
+    if sec.ENV_PATH.exists() and sec.load_env_seed().get("TEST_SITE") != site:
+        sec.ENV_PATH.replace(sec.ENV_PATH.with_name(".env.test.prev"))  # seed belongs to another site: set aside, never reuse
     skipped_signup = sec.ENV_PATH.exists()
     res = {}
     if skipped_signup:  # re-runnable: reuse the stored account instead of failing with 409 on re-signup
@@ -244,7 +260,7 @@ def _e2e(url, headless, steps):
                 lo = logout(page, ctx, pre)
                 if step("logout", lo["ok"], **{k: v for k, v in lo.items() if k != "ok"}):
                     r2 = login_once(page, ctx, login_url, creds, "relogin")
-                    r2["fresh_session"] = r2["ok"] and _cookie_hashes(ctx) != pre
+                    r2["fresh_login"] = r2["ok"] and _cookie_hashes(ctx) != pre
                     step("re_login", r2["ok"], **{k: v for k, v in r2.items() if k != "ok"})
         finally:
             b.close()

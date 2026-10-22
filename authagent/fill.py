@@ -342,6 +342,7 @@ def signup(url, headless=True, sitemap=None):
         creds["_existing"] = True
     else:
         creds = new_creds()
+        creds["TEST_SITE"] = urlsplit(url).netloc  # binds the seed to this site
         sec.write_env_seed({k: v for k, v in creds.items() if not k.startswith("_")})
     for k in ("TEST_EMAIL", "TEST_PASSWORD", "TEST_USERNAME"):
         sec.register_secret(creds.get(k))

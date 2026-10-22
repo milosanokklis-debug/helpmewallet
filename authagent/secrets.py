@@ -43,7 +43,8 @@ def load_env_seed(path=ENV_PATH):
         k, sep, v = line.partition("=")
         if sep and not line.startswith("#"):
             creds[k.strip()] = v.strip()
-            register_secret(v.strip())
+            if not k.strip().endswith("_SITE"):  # the site label is not a secret; masking it would corrupt output
+                register_secret(v.strip())
     return creds
 
 
@@ -59,8 +60,9 @@ def write_env_seed(creds=None, path=ENV_PATH, overwrite=False):
     # shortcut: does not verify the file is gitignored; .gitignore rule + stage1 secret-scan cover it
     with os.fdopen(os.open(path, flags, 0o600), "w", encoding="utf-8") as f:
         f.write("".join(f"{k}={v}\n" for k, v in creds.items()))
-    for v in creds.values():
-        register_secret(v)
+    for k, v in creds.items():
+        if not k.endswith("_SITE"):  # a site label is not a secret
+            register_secret(v)
     return path
 
 
@@ -74,3 +76,14 @@ def redact_html(html):
     for v in sorted(_known, key=len, reverse=True):
         html = html.replace(v, MASK)
     return _HTML_TOKEN.sub(lambda m: m.group(1) + '"' + MASK + '"', _JWT.sub(MASK, html))
+
+
+def redact_obj(o):
+    """Redact string VALUES inside a JSON-like structure. Keys are never touched, so dumps() always stays valid JSON."""
+    if isinstance(o, str):
+        return redact(o)
+    if isinstance(o, dict):
+        return {k: redact_obj(v) for k, v in o.items()}
+    if isinstance(o, (list, tuple)):
+        return [redact_obj(v) for v in o]
+    return o
