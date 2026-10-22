@@ -108,7 +108,7 @@ def capture_html(page, label, creds):
     html = page.content()
     red = sec.redact_html(html)
     host = re.sub(r"[^a-z0-9.-]", "_", urlsplit(page.url).netloc.lower())
-    EVIDENCE_DIR.mkdir(exist_ok=True)
+    EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)
     path = EVIDENCE_DIR / f"e2e-{host}-{time.strftime('%Y%m%d-%H%M%S')}-{label}.html"
     path.write_text(red, encoding="utf-8")
     user = creds.get("TEST_USERNAME") or creds.get("TEST_EMAIL") or ""
@@ -192,7 +192,7 @@ def logout(page, ctx, pre_cookies):
 
 def save_evidence(url, steps):
     """Persist the redacted step list to runs/e2e-<host>.json (runs/ is gitignored)."""
-    EVIDENCE_DIR.mkdir(exist_ok=True)
+    EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)
     name = "e2e-" + re.sub(r"[^a-z0-9.-]", "_", urlsplit(url).netloc.lower()) + ".json"
     (EVIDENCE_DIR / name).write_text(json.dumps(sec.redact_obj(steps), indent=1), encoding="utf-8")
 

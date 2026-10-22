@@ -197,25 +197,19 @@ def test_email_step_reports_skip_not_failure(monkeypatch):
     assert cont is False and steps[0]["pass"] is True and "Mailpit unreachable" in steps[0]["skipped"]
 
 
-def test_live_site_otp_and_link_with_real_mailpit():
+def test_live_site_otp_and_link_with_real_mailpit(site_email):
     """Live: sign up on the 8890 email-auth site, verify via real Mailpit with BOTH methods. Skips if either is down."""
-    import requests
     p = MailpitProvider()
-    if not p.reachable():
-        pytest.skip("Mailpit unreachable - skipping email verification (docker compose up -d)")
-    try:
-        requests.get("http://localhost:8890/join", timeout=2)
-    except requests.RequestException:
-        pytest.skip("testsite-email not running on :8890 (cd testsite-email && SMTP_PORT=1025 npm start)")
+    base = site_email  # fixture owns the site instance and skips if Mailpit/Docker/node are unavailable
     from playwright.sync_api import sync_playwright
     with sync_playwright() as pw:
         b = pw.chromium.launch()
         for prefer in ("otp", "link"):
             c = new_creds()
             ctx = b.new_context()
-            guard_context(ctx, "http://localhost:8890/", {"blocked": 0})
+            guard_context(ctx, base + "/", {"blocked": 0})
             page = ctx.new_page()
-            page.goto("http://localhost:8890/join")
+            page.goto(base + "/join")
             page.fill("#email", c["TEST_EMAIL"]); page.fill("#password", c["TEST_PASSWORD"]); page.click("button")
             page.wait_for_load_state()
             r = complete_verification(page, p, c, prefer=prefer)

@@ -1,5 +1,6 @@
 """`python -m authagent run --url <site>`: full pipeline with a per-run JSON report. No secrets in report or stdout."""
 import json
+import os
 import time
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -51,7 +52,7 @@ def write_report(report, run_dir: Path):
 
 def run(url, entry=None, headless=True, runs_root=None):
     """Returns (exit_code, report_path). Allowlist refusal -> exit 2 with a clear message."""
-    runs_root = Path(runs_root) if runs_root else ROOT / "runs"
+    runs_root = Path(runs_root or os.environ.get("AUTHAGENT_RUNS_DIR") or ROOT / "runs")
     stamp = time.strftime("%Y%m%d-%H%M%S")
     started = time.strftime("%Y-%m-%dT%H:%M:%S%z")
     clean = _clean_url(url, entry)

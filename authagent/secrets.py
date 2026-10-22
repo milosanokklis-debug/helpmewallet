@@ -4,7 +4,7 @@ import re
 import secrets as _s
 from pathlib import Path
 
-ENV_PATH = Path(__file__).resolve().parent.parent / ".env.test"
+ENV_PATH = Path(os.environ.get("AUTHAGENT_ENV_FILE") or Path(__file__).resolve().parent.parent / ".env.test")  # override: tests
 MASK = "[REDACTED]"
 _known = set()
 # key=value / JSON / header-style secrets; keyword may sit inside a longer name (TEST_PASSWORD)
