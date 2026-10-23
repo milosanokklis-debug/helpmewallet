@@ -21,6 +21,35 @@ def _clean_url(url, entry=None):
     return f"{p.scheme}://{p.netloc}{path}"  # query/fragment dropped: they can carry tokens
 
 
+def resolve_target(raw):
+    """Bare domain / host:port / bare port / full URL -> a URL with a scheme (http for scheme-less local dev).
+
+    Only adds a scheme; check_url is still the gate, so backslash/userinfo/non-local hosts stay refused.
+    """
+    s = str(raw).strip()
+    if "://" in s:
+        return s
+    if s.isdigit():  # bare port, the old skill convenience
+        s = "localhost:" + s
+    return "http://" + s  # IPv6 like [::1]:8891 just gets the scheme; urlsplit handles the brackets
+
+
+def _preflight(started):
+    """Deterministic env checks before the browser pipeline. Playwright missing is a hard fail the agent can fix;
+    Mailpit reachability is informational (email_verify already skips cleanly when it is down)."""
+    try:
+        import playwright.sync_api  # noqa: F401
+    except Exception:
+        return {"step": "preflight", "pass": False, "at": started, "duration_s": 0,
+                "reason": "Playwright not installed (run: playwright install chromium)"}
+    try:
+        from .mail import MailpitProvider
+        mailpit = MailpitProvider().reachable()
+    except Exception:
+        mailpit = False
+    return {"step": "preflight", "pass": True, "at": started, "duration_s": 0, "mailpit_reachable": mailpit}
+
+
 def _artifacts(steps):
     out = []
     for s in steps:
@@ -55,7 +84,7 @@ def run(url, entry=None, headless=True, runs_root=None):
     runs_root = Path(runs_root or os.environ.get("AUTHAGENT_RUNS_DIR") or ROOT / "runs")
     stamp = time.strftime("%Y%m%d-%H%M%S")
     started = time.strftime("%Y-%m-%dT%H:%M:%S%z")
-    clean = _clean_url(url, entry)
+    clean = _clean_url(resolve_target(url), entry)
     host = "".join(c if c.isalnum() or c in ".-" else "_" for c in (urlsplit(clean).netloc or "unknown").lower())
     run_dir = runs_root / f"run-{host}-{stamp}"
     info, steps = {}, []
@@ -67,12 +96,15 @@ def run(url, entry=None, headless=True, runs_root=None):
         sec.safe_print(steps[0]["reason"])
         return EXIT_REFUSED, rp
     steps.append({"step": "allowlist", "pass": True, "at": started, "duration_s": 0, "host": urlsplit(clean).netloc})
-    old = auth.EVIDENCE_DIR
-    auth.EVIDENCE_DIR = run_dir  # authenticated-HTML proofs and screenshots land in the run dir
-    try:
-        steps += auth.e2e(clean, headless=headless, info=info)
-    finally:
-        auth.EVIDENCE_DIR = old
+    pf = _preflight(started)
+    steps.append(pf)
+    if pf["pass"]:  # a failed preflight (e.g. Playwright missing) stops before the browser; status becomes "failed"
+        old = auth.EVIDENCE_DIR
+        auth.EVIDENCE_DIR = run_dir  # authenticated-HTML proofs and screenshots land in the run dir
+        try:
+            steps += auth.e2e(clean, headless=headless, info=info)
+        finally:
+            auth.EVIDENCE_DIR = old
     finished = time.strftime("%Y-%m-%dT%H:%M:%S%z")
     email_skip = any(s["step"] == "email_verify" and s.get("skipped") for s in steps)
     ok = all(s["pass"] for s in steps)

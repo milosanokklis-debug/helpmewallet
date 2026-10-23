@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 
 from authagent import secrets as S
-from authagent.run import EXIT_REFUSED, _clean_url, build_report, run, write_report
+from authagent.run import EXIT_REFUSED, _clean_url, _preflight, build_report, resolve_target, run, write_report
 
 ROOT = Path(__file__).resolve().parent.parent
 STEPS = [
@@ -64,3 +64,28 @@ def test_cli_contract_run_refusal_nonzero():
 def test_cli_existing_flags_still_work():
     assert "allowed: a.test" in _cli("--check-url", "http://a.test").stdout
     assert "--url" in _cli("run", "--help").stdout
+
+
+def test_resolve_target_adds_scheme_and_keeps_full_urls():
+    assert resolve_target("8891") == "http://localhost:8891"       # bare port
+    assert resolve_target("localhost:8891") == "http://localhost:8891"
+    assert resolve_target("myapp.test/join") == "http://myapp.test/join"
+    assert resolve_target("[::1]:8891") == "http://[::1]:8891"      # IPv6 literal, scheme only
+    assert resolve_target("http://x:1/y") == "http://x:1/y"         # full URL untouched
+    assert resolve_target("https://x.test") == "https://x.test"
+
+
+def test_bare_domain_still_allowlist_refused(tmp_path):
+    code, rp = run("example.com", runs_root=tmp_path)  # resolves to http://example.com -> still refused
+    assert code == EXIT_REFUSED and json.load(open(rp, encoding="utf-8"))["failure"]["step"] == "allowlist"
+
+
+def test_preflight_ok_reports_mailpit_flag():
+    pf = _preflight("t0")
+    assert pf["step"] == "preflight" and pf["pass"] is True and "mailpit_reachable" in pf
+
+
+def test_preflight_fails_without_playwright(monkeypatch):
+    monkeypatch.setitem(sys.modules, "playwright.sync_api", None)  # force the import to fail
+    pf = _preflight("t0")
+    assert pf["pass"] is False and "Playwright" in pf["reason"]
